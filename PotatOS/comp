@@ -1,0 +1,8 @@
+$HOME/opt/cross/bin/i686-elf-as src/boot.s -o src/boot.o
+$HOME/opt/cross/bin/i686-elf-gcc -c src/kernel.c -o src/kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+$HOME/opt/cross/bin/i686-elf-gcc -T src/linker.ld -o src/myos.bin -ffreestanding -O2 -nostdlib src/boot.o src/kernel.o -lgcc
+cp src/myos.bin isodir/boot/myos.bin
+cp boot/grub.cfg isodir/boot/grub/grub.cfg
+grub-mkrescue -o myos.iso isodir
+rm src/boot.o
+rm src/kernel.o
