@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "libraries/print.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -138,4 +139,5 @@ void kernel_main(void)
 	/* Newline support is left as an exercise. */
 	terminal_writestring("Terminal init...OK!");
 	terminal_writestring("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nLAST LINE");
+	print("pls work");
 }
