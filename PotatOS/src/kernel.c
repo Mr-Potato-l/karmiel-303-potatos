@@ -83,13 +83,39 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
 	terminal_buffer[index] = vga_entry(c, color);
 }
 
+void terminal_scroll(void)
+{
+	for (size_t y = 0; y < VGA_HEIGHT; y++) {
+		for (size_t x = 0; x < VGA_WIDTH; x++) {
+			const size_t index = y * VGA_WIDTH + x;
+			if(y != VGA_HEIGHT - 1)
+			{
+				const size_t next_index = (y + 1) * VGA_WIDTH + x;
+				terminal_buffer[index] = terminal_buffer[next_index];
+			}
+			else 
+				terminal_buffer[index] = vga_entry(' ', terminal_color);
+		}
+	}
+	terminal_row = VGA_HEIGHT - 1;
+}
+
 void terminal_putchar(char c) 
 {
+	if(c == '\n') {
+		terminal_column = 0;
+		terminal_row++;
+		
+		if (terminal_row == VGA_HEIGHT)
+        	terminal_scroll();
+        
+		return;
+	}
 	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
 	if (++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
 		if (++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
+			terminal_scroll();
 	}
 }
 
@@ -110,5 +136,6 @@ void kernel_main(void)
 	terminal_initialize();
 
 	/* Newline support is left as an exercise. */
-	terminal_writestring("this is note a drill\nthis is a message");
+	terminal_writestring("Terminal init...OK!");
+	terminal_writestring("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nLAST LINE");
 }
