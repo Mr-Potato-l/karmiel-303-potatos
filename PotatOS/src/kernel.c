@@ -22,7 +22,8 @@ void kernel_main(void)
 
 	char ex = 'Y';
 	int num = -5;
-
+	char* str = "Hello, World!";
 	print("char print: {c}\n", ex);
-	print("int print: {d}", num);
+	print("int print: {d}\n", num);
+	print("string print: {s}\n", str);
 }
