@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdarg.h>
 // #include "libraries/print.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
@@ -33,6 +34,35 @@ enum vga_color {
 	VGA_COLOR_WHITE = 15,
 };
 
+static const size_t VGA_WIDTH = 80;
+static const size_t VGA_HEIGHT = 25;
+
+size_t terminal_row;
+size_t terminal_column;
+uint8_t terminal_color;
+uint16_t* terminal_buffer;
+
+void print(const char* txt, ...);
+static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) ;
+static inline uint16_t vga_entry(unsigned char uc, uint8_t color);
+size_t strlen(const char* str);
+void terminal_initialize(void);
+void terminal_setcolor(uint8_t color);
+void terminal_putentryat(char c, uint8_t color, size_t x, size_t y);
+void terminal_putchar(char c);
+void terminal_write(const char* data, size_t size);
+void terminal_writestring(const char* data);
+void terminal_scroll(void);
+
+void kernel_main(void) 
+{
+	// Initialize terminal interface
+	terminal_initialize();
+
+	print("does it work: {c}", 'Y');
+}
+
+
 static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) 
 {
 	return fg | bg << 4;
@@ -50,14 +80,6 @@ size_t strlen(const char* str)
 		len++;
 	return len;
 }
-
-static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
-
-size_t terminal_row;
-size_t terminal_column;
-uint8_t terminal_color;
-uint16_t* terminal_buffer;
 
 void terminal_initialize(void) 
 {
@@ -132,19 +154,55 @@ void terminal_writestring(const char* data)
 }
 
 void print(const char* txt, ...)
-{	
-    for (int i = 0; txt[i]; i++) {
-            terminal_putchar(txt[i]);
+{
+	va_list args;
+    va_start(args, txt);
+    
+	
+    for (int i = 0; txt[i]; i++) {	
+        
+        if (txt[i] == '{') {
+            if (txt[i+1] == '{') {
+                terminal_putchar('{');
+                i++;
+                continue;
+            }
+
+		// Read until '}'
+		// int si = 0;
+		char spec;
+		i++;
+
+		// IN CASE WE WANT TO ADD A SPECIFIER THAT IS LONGER THAN ONE:
+		//
+		// while (txt[i] != '}' && txt[i] != '\0') {
+		// 	spec[si++] = txt[i++];
+		// }
+		//
+		// spec[si] = '\0';
+
+		spec = txt[i];
+		i++;
+
+		// 	MORE PRINTING OPTIONS THAT WILL APPEAR LATER:
+		//
+		// // Now process specifier
+		// if (strcmp(spec, "d") == 0)
+		// 	print_int(va_arg(args, int));
+		// else if (strcmp(spec, "x") == 0)
+		// 	print_hex(va_arg(args, unsigned int));
+		// else if (strcmp(spec, "s") == 0)
+		// 	print_string(va_arg(args, char*));
+
+		if (spec == 'c')
+			terminal_putchar((char)va_arg(args, int)); // char promotes to int
+
+		continue;
+        }
+
+        // Handle normal character
+        terminal_putchar(txt[i]);
     }
 
+    va_end(args);
 }
-
-void kernel_main(void) 
-{
-	// Initialize terminal interface
-	terminal_initialize();
-
-	print("pls work");
-}
-
-
