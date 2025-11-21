@@ -23,7 +23,11 @@ void kernel_main(void)
 	char ex = 'Y';
 	int num = -5;
 	char* str = "Hello, World!";
+	float fnum = 3.14; 
+
 	print("char print: {c}\n", ex);
 	print("int print: {d}\n", num);
 	print("string print: {s}\n", str);
+	print("float print: {f}\n", fnum);
+	print("hex print: {x}\n", 305441741);
 }

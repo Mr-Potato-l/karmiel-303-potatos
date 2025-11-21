@@ -37,8 +37,12 @@ void print(const char* txt, ...)
 		if (spec == 'd')
 			print_int(va_arg(args, int));
 
-		// else if (strcmp(spec, "x") == 0)
-		// 	print_hex(va_arg(args, unsigned int));
+		else if (spec == 'x')
+			print_hex(va_arg(args, unsigned int));
+
+		else if (spec == 'f')
+			print_float(va_arg(args, double));
+
 		else if (spec =='s')
 			print_string(va_arg(args, char*));
 
@@ -86,4 +90,45 @@ void print_string(const char* str)
 	while (*str != '\0') {
 		terminal_putchar(*str++);
 	}
+}
+
+void print_hex(unsigned int value)
+{
+	if (value == 0) {
+		terminal_putchar('0');
+		return;
+	}
+
+	char buffer[8]; // Enough for 32-bit hex
+	int i = 0;
+
+	while (value > 0) {
+		unsigned int digit = value & 0xF;
+		if (digit < 10)
+			buffer[i++] = digit + '0';
+		else
+			buffer[i++] = digit - 10 + 'A';
+		value >>= 4;
+	}
+
+	// Print the digits in reverse order
+	for (int j = i - 1; j >= 0; j--) {
+		terminal_putchar(buffer[j]);
+	}
+}
+
+void print_float(float value)
+{
+	if (value < 0) {
+		terminal_putchar('-');
+		value = -value;
+	}
+
+	int int_part = (int)value;
+	print_int(int_part);
+
+	terminal_putchar('.');
+
+	int frac_part = (int)((value - int_part) * 100); // 2 decimal places
+	print_int(frac_part);
 }
