@@ -74,6 +74,7 @@ void print_int(int value)
 	char buffer[10]; // Enough for 32-bit int
 	int i = 0;
 
+	// Extract digits (in reverse order)
 	while (value > 0) {
 		buffer[i++] = (value % 10) + '0';
 		value /= 10;
@@ -119,16 +120,32 @@ void print_hex(unsigned int value)
 
 void print_float(float value)
 {
+	if (value == 0.0f) {
+		print("0.0");
+		return;
+	}
+
 	if (value < 0) {
 		terminal_putchar('-');
 		value = -value;
 	}
 
+	int count = 0;
 	int int_part = (int)value;
 	print_int(int_part);
 
 	terminal_putchar('.');
 
-	int frac_part = (int)((value - int_part) * 100); // 2 decimal places
-	print_int(frac_part);
+
+	// moving the number one decimal place to the left 
+	float frac_part = (value - int_part) * 10;
+
+	// printing the fractional part (one digit at a time)
+	// limiting to 6 digits after the point
+	while (frac_part != 0.0f && count < 6) {
+		print_int((int)frac_part);
+
+		frac_part = (frac_part - (int)frac_part) * 10;
+		count++;
+	} 
 }
