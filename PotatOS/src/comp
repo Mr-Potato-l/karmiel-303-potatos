@@ -1,0 +1,12 @@
+i686-elf-as boot.s -o boot.o
+i686-elf-gcc -c terminal.c -o terminal.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+i686-elf-gcc -c print.c -o print.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+i686-elf-gcc -c kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+i686-elf-gcc -T linker.ld -o myos.bin -ffreestanding -O2 -nostdlib boot.o kernel.o terminal.o print.o -lgcc
+mv myos.bin ../isodir/boot/myos.bin
+grub-mkrescue -o ../myos.iso ../isodir
+rm boot.o
+rm kernel.o
+rm terminal.O
+rm print.o
+qemu-system-i386 -cdrom ../myos.iso
