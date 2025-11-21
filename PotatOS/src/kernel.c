@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "libraries/print.h"
+// #include "libraries/print.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -131,13 +131,20 @@ void terminal_writestring(const char* data)
 	terminal_write(data, strlen(data));
 }
 
+void print(const char* txt, ...)
+{	
+    for (int i = 0; txt[i]; i++) {
+            terminal_putchar(txt[i]);
+    }
+
+}
+
 void kernel_main(void) 
 {
-	/* Initialize terminal interface */
+	// Initialize terminal interface
 	terminal_initialize();
 
-	/* Newline support is left as an exercise. */
-	terminal_writestring("Terminal init...OK!");
-	terminal_writestring("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nLAST LINE");
 	print("pls work");
 }
+
+

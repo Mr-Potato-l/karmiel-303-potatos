@@ -5,7 +5,7 @@ void putchar(char c) {
   (void) write(1, &c, 1);
 }
 
-int print(const *char txt, ...)
+void print(const char* txt, ...)
 {
 	va_list args;
     va_start(args, txt);
