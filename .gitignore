@@ -1,0 +1,4 @@
+*.iso
+*.bin
+isodir/
+grub_log.txt
