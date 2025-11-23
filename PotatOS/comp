@@ -7,9 +7,14 @@ echo .
 sleep 0.5
 
 i686-elf-as src/boot.s -o src/boot.o
-nasm -f elf32 src/gdt_flush.s -o src/gdt_flush.o
+nasm -f elf32 src/gdt_flush.asm -o src/gdt_flush.o
+nasm -f elf32 src/idt_flush.asm -o src/idt_flush.o
+nasm -f elf32 src/stub_maker.asm -o src/stub_maker.o
 i686-elf-gcc -c src/kernel.c -o src/kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 i686-elf-gcc -c src/gdt.c -o src/gdt.o -std=gnu99 -ffreestanding -O2
+i686-elf-gcc -c src/idt.c -o src/idt.o -std=gnu99 -ffreestanding -O2
+i686-elf-gcc -c src/interrupts.c -o src/interrupts.o -std=gnu99 -ffreestanding -O2
+i686-elf-gcc -c src/terminal.c -o src/terminal.o -std=gnu99 -ffreestanding -O2
 
 echo -e "Files compiled!\n"
 
@@ -22,7 +27,7 @@ sleep 0.5
 echo .
 sleep 0.5
 
-i686-elf-gcc -T src/linker.ld -o src/myos.bin -ffreestanding -O2 -nostdlib src/boot.o src/kernel.o src/gdt.o src/gdt_flush.o -lgcc
+i686-elf-gcc -T src/linker.ld -o src/myos.bin -ffreestanding -O2 -nostdlib src/boot.o src/terminal.o src/stub_maker.o src/kernel.o src/gdt.o src/gdt_flush.o src/idt.o src/idt_flush.o src/interrupts.o -lgcc
 
 echo -e "Files linked!\n"
 
@@ -49,10 +54,8 @@ sleep 0.5
 echo .
 sleep 0.5
 
-rm src/boot.o
-rm src/kernel.o
-rm src/gdt.o
-rm src/gdt_flush.o
+rm src/*.o
+rm src/*.bin
 
 echo -e "Output files removed!\n"
 

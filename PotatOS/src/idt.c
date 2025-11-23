@@ -1,6 +1,5 @@
 #include "idt.h"
 #include "terminal.h"
-#include "pic.h"
 
 extern void idt_flush(struct idt_ptr*);
 
@@ -91,8 +90,6 @@ void idt_install(void)
     idt_set_gate(29, (uint32_t)isr29, 0x08, 0x8E);
     idt_set_gate(30, (uint32_t)isr30, 0x08, 0x8E);
     idt_set_gate(31, (uint32_t)isr31, 0x08, 0x8E);
-
-    PIC_remap(0x20, 0x28);
 
     idt_flush(&idtp);
 }
