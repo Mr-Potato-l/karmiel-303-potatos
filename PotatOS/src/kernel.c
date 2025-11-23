@@ -34,7 +34,7 @@ void kernel_main(void)
 	/* Initialize the IDT */
 	idt_install();
 
-	terminal_writestring("IDT init...OK!\n");
+	terminal_writestring("IDT init...OK!\n\n");
 
 
 	char ex = 'Y';
@@ -46,9 +46,9 @@ void kernel_main(void)
 	print("int print: {d}\n", num);
 	print("string print: {s}\n", str);
 	print("float print: {f}\n", fnum);
-	print("hex print: {x}\n", 305441741);
+	print("hex print: {x}\n\n", 305441741);
 
-	
+
 	terminal_writestring("Testing first interrupt!\n");
 
 	__asm__("xor %eax, %eax");
