@@ -1,4 +1,5 @@
 #include "print.h"
+#include "terminal.h"
 
 void print(const char* txt, ...)
 {
