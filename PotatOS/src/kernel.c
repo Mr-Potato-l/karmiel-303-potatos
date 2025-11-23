@@ -2,15 +2,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-<<<<<<< HEAD
 #include "terminal.h"
 #include "gdt.h"
 #include "idt.h"
-
-=======
 #include "print.h"
-#include "terminal.h"
->>>>>>> origin/Develop
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -22,16 +17,11 @@
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/Develop
 void kernel_main(void) 
 {
 	// Initialize terminal interface
 	terminal_initialize();
 
-<<<<<<< HEAD
 	terminal_writestring("Terminal init...OK!\n");
 	
 
@@ -47,6 +37,18 @@ void kernel_main(void)
 	terminal_writestring("IDT init...OK!\n");
 
 
+	char ex = 'Y';
+	int num = -5;
+	char* str = "Hello, World!";
+	float fnum = 3.14; 
+	
+	print("char print: {c}\n", ex);
+	print("int print: {d}\n", num);
+	print("string print: {s}\n", str);
+	print("float print: {f}\n", fnum);
+	print("hex print: {x}\n", 305441741);
+
+	
 	terminal_writestring("Testing first interrupt!\n");
 
 	__asm__("xor %eax, %eax");
@@ -54,16 +56,3 @@ void kernel_main(void)
 
 	terminal_writestring("If you see this message, the interrupt handling failed!\n");
 }
-=======
-	char ex = 'Y';
-	int num = -5;
-	char* str = "Hello, World!";
-	float fnum = 3.14; 
-
-	print("char print: {c}\n", ex);
-	print("int print: {d}\n", num);
-	print("string print: {s}\n", str);
-	print("float print: {f}\n", fnum);
-	print("hex print: {x}\n", 305441741);
-}
->>>>>>> origin/Develop
