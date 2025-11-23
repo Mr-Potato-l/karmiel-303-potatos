@@ -37,6 +37,8 @@ extern void isr29();
 extern void isr30();
 extern void isr31();
 
+extern void irq1();
+
 static struct idt_entry idt[256];
 static struct idt_ptr idtp;
 
@@ -93,6 +95,8 @@ void idt_install(void)
     idt_set_gate(31, (uint32_t)isr31, 0x08, 0x8E);
 
     PIC_remap(0x20, 0x28);
+
+    idt_set_gate(33, (uint32_t)irq1, 0x08, 0x8E);
 
     idt_flush(&idtp);
 }

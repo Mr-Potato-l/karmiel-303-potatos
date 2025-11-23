@@ -5,6 +5,7 @@
 #include "terminal.h"
 #include "gdt.h"
 #include "idt.h"
+#include "pic.h"
 
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
@@ -38,10 +39,17 @@ void kernel_main(void)
 	terminal_writestring("IDT init...OK!\n");
 
 
-	terminal_writestring("Testing first interrupt!\n");
+	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
-	__asm__("xor %eax, %eax");
-	__asm__("div %eax");
+	__asm__ volatile("sti"); // Enable interrupts
 
-	terminal_writestring("If you see this message, the interrupt handling failed!\n");
+
+	// terminal_writestring("Testing first interrupt!\n");
+
+	// __asm__("xor %eax, %eax");
+	// __asm__("div %eax");
+
+	// terminal_writestring("If you see this message, the interrupt handling failed!\n");
+
+	terminal_writestring("Testing keyboard:\n");
 }
