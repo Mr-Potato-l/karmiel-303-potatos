@@ -114,4 +114,3 @@ void terminal_backspace(void)
     // Clear the character under cursor
     terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
 }
-

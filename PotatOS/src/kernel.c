@@ -8,7 +8,7 @@
 #include "idt.h"
 #include "pic.h"
 #include "io.h"
-
+#include "print.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -20,10 +20,9 @@
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
 
-
 void kernel_main(void) 
 {
-	/* Initialize terminal interface */
+	// Initialize terminal interface
 	terminal_initialize();
 
 	terminal_writestring("Terminal init...OK!\n");
@@ -38,7 +37,19 @@ void kernel_main(void)
 	/* Initialize the IDT */
 	idt_install();
 
-	terminal_writestring("IDT init...OK!\n");
+	terminal_writestring("IDT init...OK!\n\n");
+
+
+	char ex = 'Y';
+	int num = -5;
+	char* str = "Hello, World!";
+	float fnum = 3.14; 
+	
+	print("char print: {c}\n", ex);
+	print("int print: {d}\n", num);
+	print("string print: {s}\n", str);
+	print("float print: {f}\n", fnum);
+	print("hex print: {x}\n\n", 305441741);
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
