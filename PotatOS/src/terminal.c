@@ -87,7 +87,7 @@ void terminal_writestring(const char* data)
 
 void terminal_backspace(void)
 {
-    if (terminal_column == 0 && terminal_row == 5)
+    if (terminal_column == 0 && terminal_row == 12)
         return; // already at top-left
 
     // Move cursor back
