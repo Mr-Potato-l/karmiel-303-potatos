@@ -84,3 +84,33 @@ void terminal_writestring(const char* data)
 {
 	terminal_write(data, strlen(data));
 }
+
+void terminal_backspace(void)
+{
+    if (terminal_column == 0 && terminal_row == 5)
+        return; // already at top-left
+
+    // Move cursor back
+    if (terminal_column == 0) {
+        terminal_row--;
+        terminal_column = VGA_WIDTH - 1;
+
+        // Jump over trailing spaces backwards
+        size_t index = terminal_row * VGA_WIDTH + terminal_column;
+        while (index > 0 && (terminal_buffer[index] & 0xFF) == ' ' && terminal_column > 0) {
+            index--;
+            terminal_column--;
+            if (terminal_column >= VGA_WIDTH) { // handle wrap-around
+                terminal_column = VGA_WIDTH - 1;
+                terminal_row--;
+            }
+        }
+    } else {
+        terminal_column--;
+    }
+
+    
+
+    // Clear the character under cursor
+    terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
+}

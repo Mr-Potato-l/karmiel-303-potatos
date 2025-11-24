@@ -1,5 +1,6 @@
 #include "idt.h"
 #include "terminal.h"
+#include "pic.h"
 
 extern void idt_flush(struct idt_ptr*);
 
@@ -36,6 +37,9 @@ extern void isr29();
 extern void isr30();
 extern void isr31();
 
+extern void irq0();
+extern void irq1();
+
 static struct idt_entry idt[256];
 static struct idt_ptr idtp;
 
@@ -52,12 +56,14 @@ void idt_install(void)
 {
     idtp.limit = (sizeof(struct idt_entry) * 256) - 1;
     idtp.base  = (uint32_t)&idt;
-
+    
     // Clear out the entire IDT, initializing it to zeros
     for (int i = 0; i < 256; i++) {
         idt_set_gate(i, 0, 0, 0);
     }
-
+    
+    PIC_remap(0x20, 0x28);
+    
     idt_set_gate(0, (uint32_t)isr0, 0x08, 0x8E);
     idt_set_gate(1, (uint32_t)isr1, 0x08, 0x8E);
     idt_set_gate(2, (uint32_t)isr2, 0x08, 0x8E);
@@ -90,6 +96,9 @@ void idt_install(void)
     idt_set_gate(29, (uint32_t)isr29, 0x08, 0x8E);
     idt_set_gate(30, (uint32_t)isr30, 0x08, 0x8E);
     idt_set_gate(31, (uint32_t)isr31, 0x08, 0x8E);
+    
+    idt_set_gate(32, (uint32_t)irq0, 0x08, 0x8E);
+    idt_set_gate(33, (uint32_t)irq1, 0x08, 0x8E);
 
     idt_flush(&idtp);
 }
