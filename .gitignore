@@ -1,4 +1,5 @@
 *.iso
 *.bin
+*.o
 isodir/
 grub_log.txt
