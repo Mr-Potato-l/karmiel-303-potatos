@@ -4,5 +4,6 @@
 #include <stdint.h>
 
 void keyboard_handler();
+void keyboard_poll_test();
 
 #endif

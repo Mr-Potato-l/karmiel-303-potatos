@@ -3,9 +3,11 @@
 #include <stdint.h>
 
 #include "terminal.h"
+#include "keyboard.h"
 #include "gdt.h"
 #include "idt.h"
 #include "pic.h"
+#include "io.h"
 
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
@@ -38,8 +40,12 @@ void kernel_main(void)
 
 	terminal_writestring("IDT init...OK!\n");
 
-
+	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
+
+	// uint8_t mask = inb(PIC1_DATA);
+	// terminal_writestring("PIC1 mask: ");
+	// terminal_putchar('0' + mask);
 
 	__asm__ volatile("sti"); // Enable interrupts
 
@@ -51,5 +57,13 @@ void kernel_main(void)
 
 	// terminal_writestring("If you see this message, the interrupt handling failed!\n");
 
-	terminal_writestring("Testing keyboard:\n");
+	terminal_writestring("\nTesting keyboard:\n");
+
+	// __asm__ volatile("int $33");
+
+
+	// Keep CPU running and wait for interrupts
+	while (1) {
+		asm volatile ("hlt");
+	}
 }

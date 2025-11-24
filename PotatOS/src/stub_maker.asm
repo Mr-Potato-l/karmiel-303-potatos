@@ -6,6 +6,7 @@ isr%1:
     pushad
     push dword %1 
     call isr_common_handler
+    add esp, 4
     popad
     iret
 %endmacro
@@ -56,4 +57,5 @@ ISR 29
 ISR 30
 ISR 31
 
+IRQ 0
 IRQ 1
