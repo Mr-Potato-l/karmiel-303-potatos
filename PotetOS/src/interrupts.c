@@ -3,19 +3,19 @@
 #include "pic.h"
 
 void isr_common_handler(uint32_t vector_number) {
-    terminal_writestring("Interrupt ");
+    print("Interrupt ");
 
     char buff[16];
-    terminal_writestring(inttoa(vector_number, buff));
+    print(inttoa(vector_number, buff));
 
     switch (vector_number)
     {
         case  0:
-            terminal_writestring(": Division By Zero\n");
+            print(": Division By Zero\n");
             break;
         
         default:
-            terminal_writestring(": Unknown Interrupt\n");
+            print(": Unknown Interrupt\n");
             break;
     }
 
@@ -26,17 +26,17 @@ void isr_common_handler(uint32_t vector_number) {
 
 void irq_common_handler(uint32_t irq)
 {
-    // terminal_writestring("* waiting for input *\n");
+    // print("* waiting for input *\n");
     switch (irq)
     {
         case 0:
             break;
         case 1:
-            //terminal_writestring("Keyboard IRQ\n");
+            //print("Keyboard IRQ\n");
             keyboard_handler();
             break;
         default:
-            terminal_writestring("Unknown IRQ\n");
+            print("Unknown IRQ\n");
             break;
     }
 

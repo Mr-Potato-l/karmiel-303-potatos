@@ -25,19 +25,19 @@ void kernel_main(void)
 	// Initialize terminal interface
 	terminal_initialize();
 
-	terminal_writestring("Terminal init...OK!\n");
+	print("Terminal init...OK!\n");
 	
 
 	/* Initialize the GDT */
 	gdt_install();
 	
-	terminal_writestring("GDT init...OK!\n");
+	print("GDT init...OK!\n");
 
 
 	/* Initialize the IDT */
 	idt_install();
 
-	terminal_writestring("IDT init...OK!\n\n");
+	print("IDT init...OK!\n\n");
 
 
 	char ex = 'Y';
@@ -55,20 +55,20 @@ void kernel_main(void)
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
 	// uint8_t mask = inb(PIC1_DATA);
-	// terminal_writestring("PIC1 mask: ");
+	// print("PIC1 mask: ");
 	// terminal_putchar('0' + mask);
 
 	__asm__ volatile("sti"); // Enable interrupts
 
 
-	// terminal_writestring("Testing first interrupt!\n");
+	// print("Testing first interrupt!\n");
 
 	// __asm__("xor %eax, %eax");
 	// __asm__("div %eax");
 
-	// terminal_writestring("If you see this message, the interrupt handling failed!\n");
+	// print("If you see this message, the interrupt handling failed!\n");
 
-	terminal_writestring("\nTesting keyboard:\n");
+	print("\nTesting keyboard:\n");
 
 	// __asm__ volatile("int $33");
 
