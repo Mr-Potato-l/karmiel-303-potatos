@@ -6,6 +6,20 @@ isr%1:
     pushad
     push dword %1 
     call isr_common_handler
+    add esp, 4
+    popad
+    iret
+%endmacro
+
+extern irq_common_handler
+
+%macro IRQ 1
+global irq%1
+irq%1:
+    pushad
+    push dword %1              ; Push IRQ number (0–15)
+    call irq_common_handler    ; Call your C IRQ handler
+    add esp, 4
     popad
     iret
 %endmacro
@@ -42,3 +56,6 @@ ISR 28
 ISR 29
 ISR 30
 ISR 31
+
+IRQ 0
+IRQ 1
