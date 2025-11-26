@@ -5,6 +5,7 @@
 #include "terminal.h"
 
 void isr_common_handler(uint32_t vector_number);
-void itoa(int value, char* str, int base);
+void irq_common_handler(uint32_t irq);
+char* inttoa(int value, char* str);
 
 #endif
