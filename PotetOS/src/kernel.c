@@ -9,6 +9,7 @@
 #include "pic.h"
 #include "io.h"
 #include "print.h"
+#include "multiboot.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -20,24 +21,45 @@
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
 
-void kernel_main(void) 
+void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 {
 	// Initialize terminal interface
 	terminal_initialize();
+	print("Terminal init...OK!\n");
 
-	terminal_writestring("Terminal init...OK!\n");
-	
+	print("Available Memory Map:\n");
+	/* Make sure the magic number matches for memory mapping*/
+    if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+        print("invalid magic number!\n");
+    }
+
+    /* Check bit 6 to see if we have a valid memory map */
+    if(!(mbd->flags >> 6 & 0x1)) {
+        print("invalid memory map given by GRUB bootloader\n");
+    }
+
+    /* Loop through the memory map and display the values */
+    uint32_t mmap_end = mbd->mmap_addr + mbd->mmap_length;
+
+	for (multiboot_memory_map_t* mmmt = (multiboot_memory_map_t*) mbd->mmap_addr;
+		(uint32_t)mmmt < mmap_end;
+		mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
+	{
+		print("Start: {d}, Len: {d}, Size: {d}, Type: {d}\n",
+			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
+	}
+
 
 	/* Initialize the GDT */
 	gdt_install();
 	
-	terminal_writestring("GDT init...OK!\n");
+	print("GDT init...OK!\n");
 
 
 	/* Initialize the IDT */
 	idt_install();
 
-	terminal_writestring("IDT init...OK!\n\n");
+	print("IDT init...OK!\n\n");
 
 
 	char ex = 'Y';
@@ -68,7 +90,7 @@ void kernel_main(void)
 
 	// terminal_writestring("If you see this message, the interrupt handling failed!\n");
 
-	terminal_writestring("\nTesting keyboard:\n");
+	print("\nTesting keyboard:\n");
 
 	// __asm__ volatile("int $33");
 

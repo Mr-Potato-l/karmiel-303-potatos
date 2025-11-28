@@ -76,6 +76,7 @@ _start:
 	runtime support to work as well.
 	*/
 
+
 	/*
 	Enter the high-level kernel. The ABI requires the stack is 16-byte
 	aligned at the time of the call instruction (which afterwards pushes
@@ -84,7 +85,11 @@ _start:
 	stack since (pushed 0 bytes so far), so the alignment has thus been
 	preserved and the call is well defined.
 	*/
+	
+	push %eax
+	push %ebx
 	call kernel_main
+	add $8, %esp
 
 	/*
 	If the system has nothing more to do, put the computer into an
