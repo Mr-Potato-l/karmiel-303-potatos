@@ -10,6 +10,7 @@
 #include "io.h"
 #include "print.h"
 #include "multiboot.h"
+#include "paging.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -59,8 +60,21 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	/* Initialize the IDT */
 	idt_install();
 
-	print("IDT init...OK!\n\n");
+	print("IDT init...OK!\n");
 
+
+	/* Initialize Paging */
+	init_paging();
+
+	print("Paging init...OK!\n\n");
+
+
+	// Testing Paging
+	volatile uint32_t* p = (uint32_t*)0xDEADBEEF;
+	uint32_t x = *p;
+
+
+	// Testing print function
 
 	char ex = 'Y';
 	int num = -5;
