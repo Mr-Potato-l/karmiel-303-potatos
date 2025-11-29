@@ -69,7 +69,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	print("Paging init...OK!\n\n");
 
 
-	// Testing Paging
+	// Testing Paging (SHOULD CAUSE INTERRUPT)
 	volatile uint32_t* p = (uint32_t*)0xDEADBEEF;
 	uint32_t x = *p;
 
