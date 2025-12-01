@@ -27,7 +27,25 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	// Initialize terminal interface
 	terminal_initialize();
 	print("Terminal init...OK!\n");
-
+	
+	
+	/* Initialize the GDT */
+	gdt_install();
+	
+	print("GDT init...OK!\n");
+	
+	
+	/* Initialize the IDT */
+	idt_install();
+	
+	print("IDT init...OK!\n");
+	
+	
+	/* Initialize Paging */
+	init_paging();
+	
+	print("Paging init...OK!\n\n");
+	
 	print("Available Memory Map:\n");
 	/* Make sure the magic number matches for memory mapping*/
     if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -50,42 +68,10 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
 	}
 
-
-	/* Initialize the GDT */
-	gdt_install();
-	
-	print("GDT init...OK!\n");
-
-
-	/* Initialize the IDT */
-	idt_install();
-
-	print("IDT init...OK!\n");
-
-
-	/* Initialize Paging */
-	init_paging();
-
-	print("Paging init...OK!\n\n");
-
-
 	// Testing Paging (SHOULD CAUSE INTERRUPT)
-	volatile uint32_t* p = (uint32_t*)0xDEADBEEF;
-	uint32_t x = *p;
+	// volatile uint32_t* p = (uint32_t*)0xDEADBEEF;
+	// uint32_t x = *p;
 
-
-	// Testing print function
-
-	char ex = 'Y';
-	int num = -5;
-	char* str = "Hello, World!";
-	float fnum = 3.14; 
-	
-	print("char print: {c}\n", ex);
-	print("int print: {d}\n", num);
-	print("string print: {s}\n", str);
-	print("float print: {f}\n", fnum);
-	print("hex print: {x}\n\n", 305441741);
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
@@ -97,16 +83,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	__asm__ volatile("sti"); // Enable interrupts
 
 
-	// terminal_writestring("Testing first interrupt!\n");
-
-	// __asm__("xor %eax, %eax");
-	// __asm__("div %eax");
-
-	// terminal_writestring("If you see this message, the interrupt handling failed!\n");
-
-	print("\nTesting keyboard:\n");
-
-	// __asm__ volatile("int $33");
+	print("--------------------------------------------------------------------------------");
 
 
 	// Keep CPU running and wait for interrupts

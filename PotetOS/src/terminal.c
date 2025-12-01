@@ -87,8 +87,8 @@ void terminal_writestring(const char* data)
 
 void terminal_backspace(void)
 {
-    if (terminal_column == 0 && terminal_row == 12)
-        return; // already at top-left
+    if (terminal_column == 0 && terminal_row == 13) // change this to set starting line
+        return;
 
     // Move cursor back
     if (terminal_column == 0) {
