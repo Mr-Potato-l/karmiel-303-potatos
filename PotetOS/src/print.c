@@ -22,19 +22,20 @@ void print(const char* txt, ...)
 		i++;
 
 		// IN CASE WE WANT TO ADD A SPECIFIER THAT IS LONGER THAN ONE:
-		//
-		// while (txt[i] != '}' && txt[i] != '\0') {
-		// 	spec[si++] = txt[i++];
-		// }
-		//
-		// spec[si] = '\0';
+		/*
+		while (txt[i] != '}' && txt[i] != '\0') {
+			spec[si++] = txt[i++];
+		}
+		
+		spec[si] = '\0';
 
 		spec = txt[i];
 		i++;
+		*/
 
 		// 	MORE PRINTING OPTIONS THAT WILL APPEAR LATER:
 		
-		// Now process specifier
+		// process specifier
 		if (spec == 'd')
 			print_int(va_arg(args, int));
 

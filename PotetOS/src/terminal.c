@@ -60,20 +60,28 @@ void terminal_putchar(char c)
 	// special handling for control characters
 	switch(c) {
 		case -1: // Up arrow
-			if(terminal_row > 0)
+			if(terminal_row > 0){
 				terminal_row--;
+				update_cursor();
+			}
 			return;
 		case -2: // Down arrow
-			if(terminal_row < VGA_HEIGHT - 1)
+			if(terminal_row < VGA_HEIGHT - 1){
 				terminal_row++;
+				update_cursor();
+			}
 			return;
 		case -3: // Left arrow
-			if(terminal_column > 0)
+			if(terminal_column > 0){
 				terminal_column--;
+				update_cursor();
+			}
 			return;
 		case -4: // Right arrow
-			if(terminal_column < VGA_WIDTH - 1)
+			if(terminal_column < VGA_WIDTH - 1){
 				terminal_column++;
+				update_cursor();
+			}
 			return;
 		case '\b': // Backspace
 			terminal_backspace();
@@ -83,9 +91,11 @@ void terminal_putchar(char c)
 			terminal_row++;
 			if (terminal_row == VGA_HEIGHT)
 				terminal_scroll();
+			update_cursor();
 			return;
 		case 9: // Tab
 			terminal_column += 4;
+			update_cursor();
 			return;
 	}
 
@@ -95,17 +105,7 @@ void terminal_putchar(char c)
 		if (++terminal_row == VGA_HEIGHT)
 			terminal_scroll();
 	}
-}
-
-void terminal_write(const char* data, size_t size) 
-{
-	for (size_t i = 0; i < size; i++)
-		terminal_putchar(data[i]);
-}
-
-void terminal_writestring(const char* data) 
-{
-	terminal_write(data, strlen(data));
+	update_cursor();
 }
 
 void terminal_backspace(void)
@@ -136,4 +136,15 @@ void terminal_backspace(void)
 
     // Clear the character under cursor
     terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
+	update_cursor();
+}
+
+void update_cursor()
+{
+	uint16_t pos = terminal_row * VGA_WIDTH + terminal_column;
+
+	outb(0x3D4, 0x0F);
+	outb(0x3D5, (uint8_t)(pos & 0xFF));
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
 }
