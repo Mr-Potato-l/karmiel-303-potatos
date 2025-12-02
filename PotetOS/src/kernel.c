@@ -45,7 +45,7 @@ void kernel_main(void)
 	char* str = "Hello, World!";
 	float fnum = 3.14; 
 	
-	print("char print: {c}\n", ex);
+	print("char print: {c}\n", 'Y');
 	print("int print: {d}\n", num);
 	print("string print: {s}\n", str);
 	print("float print: {f}\n", fnum);

@@ -28,10 +28,10 @@ void print(const char* txt, ...)
 		}
 		
 		spec[si] = '\0';
-
+		*/
+		
 		spec = txt[i];
 		i++;
-		*/
 
 		// 	MORE PRINTING OPTIONS THAT WILL APPEAR LATER:
 		
