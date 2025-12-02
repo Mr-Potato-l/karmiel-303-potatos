@@ -52,5 +52,7 @@ void terminal_scroll(void);
 void terminal_putchar(char c);
 void terminal_backspace(void);
 void update_cursor();
+int line_is_empty(size_t row);
+
 
 #endif

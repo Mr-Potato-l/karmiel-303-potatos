@@ -62,14 +62,17 @@ void terminal_putchar(char c)
 		case -1: // Up arrow
 			if(terminal_row > 0){
 				terminal_row--;
-				update_cursor();
+				terminal_column = line_is_empty(terminal_row);
 			}
+			update_cursor();
 			return;
 		case -2: // Down arrow
 			if(terminal_row < VGA_HEIGHT - 1){
 				terminal_row++;
-				update_cursor();
+
+				terminal_column = line_is_empty(terminal_row);
 			}
+			update_cursor();
 			return;
 		case -3: // Left arrow
 			if(terminal_column > 0){
@@ -94,8 +97,10 @@ void terminal_putchar(char c)
 			update_cursor();
 			return;
 		case 9: // Tab
-			terminal_column += 4;
-			update_cursor();
+		// 4 spaces for tab
+		for (int i = 0; i < 4; i++) {
+			terminal_putchar(' ');
+		}
 			return;
 	}
 
@@ -147,4 +152,15 @@ void update_cursor()
 	outb(0x3D5, (uint8_t)(pos & 0xFF));
 	outb(0x3D4, 0x0E);
 	outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+}
+
+// Checks for the last empty column in line to send the user there when pressing up/down arrow
+int line_is_empty(size_t row) {
+	// value that represents the last empty column in the line
+	int empty = 0;
+    for (size_t x = 0; x < VGA_WIDTH; x++) {
+        if ((terminal_buffer[row * VGA_WIDTH + x] & 0xFF) != ' ')
+            empty++;
+    }
+    return empty;
 }
