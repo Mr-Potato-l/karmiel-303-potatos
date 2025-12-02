@@ -15,22 +15,9 @@ unsigned char kbd_us[128] = {
     '*', 0, ' '
 };
     
-
-// void keyboard_handler() {
-//     uint8_t scancodeancode = inb(KBD_DATA);
-
-//     // ignore release codes (>= 0x80)
-//     if (scancodeancode < 128) {
-//         char c = kbd_us[scancodeancode];
-//         print("Key pressed: {c}\n", c);
-//         if(c == '\b') 
-//             terminal_backspace();
-//         else if (c != 0)
-//             terminal_putchar(c);
-//     }
-// }
-
+// Keyboard interrupts handler
 void keyboard_handler() {
+    // get input through port 0x60
     uint8_t scancode = inb(KBD_DATA);
     static int extended = 0;
 
