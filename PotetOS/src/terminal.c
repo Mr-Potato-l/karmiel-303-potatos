@@ -57,20 +57,36 @@ void terminal_scroll(void)
 
 void terminal_putchar(char c) 
 {
-	if(c == '\n') {
-		terminal_column = 0;
-		terminal_row++;
-		
-		if (terminal_row == VGA_HEIGHT)
-        	terminal_scroll();
-        
-		return;
-	}
-
-	// If tab
-	if (c == 9) {
-		terminal_column += 4;
-		return;
+	// special handling for control characters
+	switch(c) {
+		case -1: // Up arrow
+			if(terminal_row > 0)
+				terminal_row--;
+			return;
+		case -2: // Down arrow
+			if(terminal_row < VGA_HEIGHT - 1)
+				terminal_row++;
+			return;
+		case -3: // Left arrow
+			if(terminal_column > 0)
+				terminal_column--;
+			return;
+		case -4: // Right arrow
+			if(terminal_column < VGA_WIDTH - 1)
+				terminal_column++;
+			return;
+		case '\b': // Backspace
+			terminal_backspace();
+			return;
+		case '\n': // Newline
+			terminal_column = 0;
+			terminal_row++;
+			if (terminal_row == VGA_HEIGHT)
+				terminal_scroll();
+			return;
+		case 9: // Tab
+			terminal_column += 4;
+			return;
 	}
 
 	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);

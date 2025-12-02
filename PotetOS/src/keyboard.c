@@ -16,15 +16,55 @@ unsigned char kbd_us[128] = {
 };
     
 
+// void keyboard_handler() {
+//     uint8_t scancodeancode = inb(KBD_DATA);
+
+//     // ignore release codes (>= 0x80)
+//     if (scancodeancode < 128) {
+//         char c = kbd_us[scancodeancode];
+//         print("Key pressed: {c}\n", c);
+//         if(c == '\b') 
+//             terminal_backspace();
+//         else if (c != 0)
+//             terminal_putchar(c);
+//     }
+// }
+
 void keyboard_handler() {
-    uint8_t scancode = inb(0x60);
+    uint8_t scancode = inb(KBD_DATA);
+    static int extended = 0;
+
+    // Check for extended scancodeancode prefix
+    if (scancode == 0xE0) {
+        extended = 1;
+        return;
+    }
+
+    // Handle extended scancodeancode
+    if (extended) {
+        extended = 0;
+
+        switch (scancode) {
+            case 0x48: // Arrow Up
+                terminal_putchar(-1); // Indicate up arrow
+                break;
+            case 0x50: // Arrow Down
+                terminal_putchar(-2); // Indicate down arrow
+                break;
+            case 0x4B: // Arrow Left
+                terminal_putchar(-3); // Indicate left arrow
+                break;
+            case 0x4D: // Arrow Right
+                terminal_putchar(-4); // Indicate right arrow
+                break;
+        }
+        return;
+    }
 
     // ignore release codes (>= 0x80)
     if (scancode < 128) {
         char c = kbd_us[scancode];
-        if(c == '\b') 
-            terminal_backspace();
-        else if (c != 0)
+        if (c != 0)
             terminal_putchar(c);
     }
 }
