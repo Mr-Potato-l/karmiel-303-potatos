@@ -1,6 +1,5 @@
 #include "pmm.h"
 #include <stdint.h>
-#include <string.h>
 
 #define PAGE_SIZE 0x1000u
 
@@ -107,14 +106,10 @@ void pmm_init(uint32_t mmap_addr, uint32_t mmap_length, uint32_t max_phys) {
     managed_phys_bytes = highest;
     total_frames = (managed_phys_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
 
-    frames_bitmap_u32 = (total_frames + 31) / 32;
+    frames_bitmap = frames_bitmap_static;
+    frames_bitmap_u32 = sizeof(frames_bitmap_static) / 4;
 
     
-
-    extern uint32_t page_directory[];
-    uint8_t *after_pd = (uint8_t*)page_directory + 4096;
-    frames_bitmap = (uint32_t*)after_pd;
-
     for (uint32_t i = 0; i < frames_bitmap_u32; ++i) frames_bitmap[i] = 0;
 
     for (uint32_t f = 0; f < total_frames; ++f) bitmap_set(f);
@@ -133,9 +128,6 @@ void pmm_init(uint32_t mmap_addr, uint32_t mmap_length, uint32_t max_phys) {
         }
         pos += e->size + sizeof(e->size);
     }
-
-    uint32_t pd_phys = (uint32_t)(uintptr_t)page_directory;
-    pmm_mark_used(pd_phys, 4096 + frames_bitmap_u32 * 4);
 }
 
 uint32_t pmm_total_frames(void) { return total_frames; }

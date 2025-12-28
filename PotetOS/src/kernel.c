@@ -11,6 +11,7 @@
 #include "print.h"
 #include "multiboot.h"
 #include "paging.h"
+#include "pmm.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -21,6 +22,8 @@
 #if !defined(__i386__)
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
+
+#define TEST_VIRT 0x400000  // 4MB
 
 void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 {
@@ -39,8 +42,16 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	idt_install();
 	
 	print("IDT init...OK!\n");
-	
-	
+
+
+	/* Initialize the PMM */
+	pmm_init(mbd->mmap_addr, mbd->mmap_length, 0);
+
+	pmm_dump_stats();
+
+	print("PMM init...OK!\n");
+
+
 	/* Initialize Paging */
 	init_paging();
 	
@@ -65,12 +76,43 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
 	{
 		print("Start: {d}, Len: {d}, Size: {d}, Type: {d}\n",
-			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
+			(int)mmmt->addr, (int)mmmt->len, mmmt->size, mmmt->type);
 	}
 
-	// Testing Paging (SHOULD CAUSE INTERRUPT)
-	// volatile uint32_t* p = (uint32_t*)0xDEADBEEF;
-	// uint32_t x = *p;
+	/* Different Paging Tests! */
+
+	uint32_t *ptr = (uint32_t*)0x1000;
+	*ptr = 0xDEADBEEF;
+
+	if (*ptr == 0xDEADBEEF) {
+		print("Paging OK: identity map works\n");
+	} else {
+		print("Paging BROKEN\n");
+	}
+
+	uint32_t a = pmm_alloc_frame();
+	uint32_t b = pmm_alloc_frame();
+
+	print("Allocated frames:\n");
+	print("a: ");
+	print_hex(a);
+	print("\nb: ");
+	print_hex(b);
+	print("\n");
+
+	uint32_t phys = pmm_alloc_frame();
+	map_page(TEST_VIRT, phys, 0x3); // present | rw
+
+	uint32_t *v = (uint32_t*)TEST_VIRT;
+	*v = 0xCAFEBABE;
+
+	if (*v == 0xCAFEBABE) {
+		print("Virtual mapping OK\n");
+	}
+
+	volatile uint32_t *boom = (uint32_t*)0xDEADC000;
+	uint32_t x = *boom;
+	print("This line should never be printed!\n");
 
 
 	IRQ_clear_mask(0);

@@ -17,7 +17,7 @@ typedef struct page {
     uint32_t frame      : 20; // Frame address (shifted right 12 bits)
 } page_t;
 
-void init_paging(uint32_t phys_mem_bytes); // call once with an estimate or real value
+void init_paging(); // call once with an estimate or real value
 void map_page(uint32_t virt, uint32_t phys, uint32_t flags);
 void unmap_page(uint32_t virt);
 page_t* get_page(uint32_t virt, int create);
