@@ -81,7 +81,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	char* str = "Hello, World!";
 	float fnum = 3.14; 
 	
-	print("char print: {c}\n", ex);
+	print("char print: {c}\n", 'Y');
 	print("int print: {d}\n", num);
 	print("string print: {s}\n", str);
 	print("float print: {f}\n", fnum);
@@ -91,18 +91,18 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
 	// uint8_t mask = inb(PIC1_DATA);
-	// terminal_writestring("PIC1 mask: ");
+	// print("PIC1 mask: ");
 	// terminal_putchar('0' + mask);
 
 	__asm__ volatile("sti"); // Enable interrupts
 
 
-	// terminal_writestring("Testing first interrupt!\n");
+	// print("Testing first interrupt!\n");
 
 	// __asm__("xor %eax, %eax");
 	// __asm__("div %eax");
 
-	// terminal_writestring("If you see this message, the interrupt handling failed!\n");
+	// print("If you see this message, the interrupt handling failed!\n");
 
 	print("\nTesting keyboard:\n");
 
