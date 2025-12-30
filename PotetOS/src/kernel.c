@@ -11,6 +11,7 @@
 #include "print.h"
 #include "multiboot.h"
 #include "paging.h"
+#include "Malloc.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -42,13 +43,12 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
     /* Loop through the memory map and display the values */
     uint32_t mmap_end = mbd->mmap_addr + mbd->mmap_length;
 
-	for (multiboot_memory_map_t* mmmt = (multiboot_memory_map_t*) mbd->mmap_addr;
-		(uint32_t)mmmt < mmap_end;
-		mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
-	{
-		print("Start: {d}, Len: {d}, Size: {d}, Type: {d}\n",
-			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
-	}
+	multiboot_memory_map_t* mmmt = (multiboot_memory_map_t*) mbd->mmap_addr;
+	mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size))
+
+	// Initialize malloc
+	malloc_init(mmmt, magic);
+	print("Malloc init...OK!\n");
 
 
 	/* Initialize the GDT */
@@ -69,23 +69,10 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	print("Paging init...OK!\n\n");
 
 
-	// Testing Paging (SHOULD CAUSE INTERRUPT)
-	volatile uint32_t* p = (uint32_t*)0xDEADBEEF;
-	uint32_t x = *p;
+	// // Testing Paging (SHOULD CAUSE INTERRUPT)
+	// volatile uint32_t* p = (uint32_t*)0xDEADBEEF;
+	// uint32_t x = *p;
 
-
-	// Testing print function
-
-	char ex = 'Y';
-	int num = -5;
-	char* str = "Hello, World!";
-	float fnum = 3.14; 
-	
-	print("char print: {c}\n", 'Y');
-	print("int print: {d}\n", num);
-	print("string print: {s}\n", str);
-	print("float print: {f}\n", fnum);
-	print("hex print: {x}\n\n", 305441741);
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
