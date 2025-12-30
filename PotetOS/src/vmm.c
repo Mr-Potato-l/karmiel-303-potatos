@@ -12,6 +12,8 @@ typedef struct page {
     uint32_t frame:20;
 } page_t;
 
+void *memset(void *dst, int val, size_t count);
+
 page_t* get_page(uint32_t virt, int create) {
     uint32_t pd_idx = virt >> 22;
     uint32_t pt_idx = (virt >> 12) & 0x3FF;
@@ -72,4 +74,12 @@ void free_frame_for_page(page_t* page) {
 
 void vmm_init() {
     // could set up kernel heap mappings here if needed
+}
+
+void *memset(void *dst, int val, size_t count) {
+    unsigned char *ptr = (unsigned char*)dst;
+    while(count--) {
+        *ptr++ = (unsigned char)val;
+    }
+    return dst;
 }

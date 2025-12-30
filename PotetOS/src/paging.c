@@ -1,4 +1,5 @@
 #include "paging.h"
+#include "pmm.h"
 
 uint32_t page_directory[PAGE_ENTRIES] __attribute__((aligned(4096)));
 

@@ -2,9 +2,8 @@
 #define VMM_H
 
 #include <stdint.h>
-#include "paging.h"
 
-typedef struct page page_t; // from old paging.h, can keep in vmm.h
+typedef struct page page_t;
 
 void vmm_init();
 page_t* get_page(uint32_t virt, int create);
