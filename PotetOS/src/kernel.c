@@ -12,6 +12,7 @@
 #include "multiboot.h"
 #include "paging.h"
 #include "pmm.h"
+#include "vmm.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -54,6 +55,8 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 
 	/* Initialize Paging */
 	init_paging();
+
+	vmm_init();
 	
 	print("Paging init...OK!\n\n");
 	
@@ -109,11 +112,6 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	if (*v == 0xCAFEBABE) {
 		print("Virtual mapping OK\n");
 	}
-
-	volatile uint32_t *boom = (uint32_t*)0xDEADC000;
-	uint32_t x = *boom;
-	print("This line should never be printed!\n");
-
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line

@@ -102,6 +102,16 @@ void pmm_init(uint32_t mmap_addr, uint32_t mmap_length, uint32_t max_phys) {
         pos += e->size + sizeof(e->size);
     }
 
+    // After clearing usable memory
+    extern uint32_t page_directory; // your page_directory symbol
+    uint32_t pd_phys = (uint32_t)&page_directory;
+
+    // Mark page directory and page tables used
+    pmm_mark_used(pd_phys, PAGE_SIZE * 2); // if you have 1 table allocated after
+    // Mark kernel binary used (rough estimate)
+    pmm_mark_used(0x100000, 0x400000); // example: kernel occupies 1MB–4MB
+
+
     if (max_phys && max_phys < highest) highest = max_phys;
     managed_phys_bytes = highest;
     total_frames = (managed_phys_bytes + PAGE_SIZE - 1) / PAGE_SIZE;
