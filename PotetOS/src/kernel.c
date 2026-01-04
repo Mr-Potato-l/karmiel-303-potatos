@@ -13,6 +13,7 @@
 #include "paging.h"
 #include "pmm.h"
 #include "vmm.h"
+#include "heap.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -59,6 +60,12 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	vmm_init();
 	
 	print("Paging init...OK!\n\n");
+
+
+	heap_init();
+
+	print("Heap init...OK!\n");
+
 	
 	print("Available Memory Map:\n");
 	/* Make sure the magic number matches for memory mapping*/
@@ -93,14 +100,14 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("Paging BROKEN\n");
 	}
 
-	uint32_t a = pmm_alloc_frame();
-	uint32_t b = pmm_alloc_frame();
+	uint32_t frame_a = pmm_alloc_frame();
+	uint32_t frame_b = pmm_alloc_frame();
 
 	print("Allocated frames:\n");
 	print("a: ");
-	print_hex(a);
+	print_hex(frame_a);
 	print("\nb: ");
-	print_hex(b);
+	print_hex(frame_b);
 	print("\n");
 
 	uint32_t phys = pmm_alloc_frame();
@@ -112,6 +119,19 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	if (*v == 0xCAFEBABE) {
 		print("Virtual mapping OK\n");
 	}
+
+	int* a = kmalloc(sizeof(int));
+	int* b = kmalloc(sizeof(int));
+
+	*a = 1337;
+	*b = 0xDEADBEEF;
+
+	print("heap a = ");
+	print_hex(*a);
+	print("\nheap b = ");
+	print_hex(*b);
+	print("\n");
+
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
