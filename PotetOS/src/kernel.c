@@ -45,6 +45,8 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	
 	print("IDT init...OK!\n");
 
+	IRQ_clear_mask(0);
+	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
 	/* Initialize the PMM */
 	pmm_init(mbd->mmap_addr, mbd->mmap_length, 0);

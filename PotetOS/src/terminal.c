@@ -17,7 +17,7 @@ void terminal_initialize(void)
 {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+	terminal_color = vga_entry_color(VGA_COLOR_GREEN, VGA_COLOR_BLACK);
 	terminal_buffer = (uint16_t*) 0xB8000;
 	for (size_t y = 0; y < VGA_HEIGHT; y++) {
 		for (size_t x = 0; x < VGA_WIDTH; x++) {
@@ -57,38 +57,66 @@ void terminal_scroll(void)
 
 void terminal_putchar(char c) 
 {
-	if(c == '\n') {
-		terminal_column = 0;
-		terminal_row++;
-		
-		if (terminal_row == VGA_HEIGHT)
-        	terminal_scroll();
-        
-		return;
+	// special handling for control characters
+	switch(c) {
+		case -1: // Up arrow
+			if(terminal_row > 0){
+				terminal_row--;
+				terminal_column = line_is_empty(terminal_row);
+			}
+			update_cursor();
+			return;
+		case -2: // Down arrow
+			if(terminal_row < VGA_HEIGHT - 1){
+				terminal_row++;
+
+				terminal_column = line_is_empty(terminal_row);
+			}
+			update_cursor();
+			return;
+		case -3: // Left arrow
+			if(terminal_column > 0){
+				terminal_column--;
+				update_cursor();
+			}
+			return;
+		case -4: // Right arrow
+			if(terminal_column < VGA_WIDTH - 1){
+				terminal_column++;
+				update_cursor();
+			}
+			return;
+		case '\b': // Backspace
+			terminal_backspace();
+			return;
+		case '\n': // Newline
+			terminal_column = 0;
+			terminal_row++;
+			if (terminal_row == VGA_HEIGHT)
+				terminal_scroll();
+			update_cursor();
+			return;
+		case 9: // Tab
+		// 4 spaces for tab
+		for (int i = 0; i < 4; i++) {
+			terminal_putchar(' ');
+		}
+			return;
 	}
+
 	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
 	if (++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
 		if (++terminal_row == VGA_HEIGHT)
 			terminal_scroll();
 	}
-}
-
-void terminal_write(const char* data, size_t size) 
-{
-	for (size_t i = 0; i < size; i++)
-		terminal_putchar(data[i]);
-}
-
-void terminal_writestring(const char* data) 
-{
-	terminal_write(data, strlen(data));
+	update_cursor();
 }
 
 void terminal_backspace(void)
 {
-    if (terminal_column == 0 && terminal_row == 13) // change this to set starting line
-        return;
+    if (terminal_column == 0 && terminal_row == 12)
+        return; // already at top-left
 
     // Move cursor back
     if (terminal_column == 0) {
@@ -113,4 +141,26 @@ void terminal_backspace(void)
 
     // Clear the character under cursor
     terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
+	update_cursor();
+}
+
+void update_cursor()
+{
+	uint16_t pos = terminal_row * VGA_WIDTH + terminal_column;
+
+	outb(0x3D4, 0x0F);
+	outb(0x3D5, (uint8_t)(pos & 0xFF));
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+}
+
+// Checks for the last empty column in line to send the user there when pressing up/down arrow
+int line_is_empty(size_t row) {
+	// value that represents the last empty column in the line
+	int empty = 0;
+    for (size_t x = 0; x < VGA_WIDTH; x++) {
+        if ((terminal_buffer[row * VGA_WIDTH + x] & 0xFF) != ' ')
+            empty = x+1;// oomves the cursor behind the last character
+    }
+    return empty;
 }
