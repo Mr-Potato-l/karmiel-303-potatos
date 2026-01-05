@@ -51,7 +51,9 @@ void keyboard_handler() {
     // ignore release codes (>= 0x80)
     if (scancode < 128) {
         char c = kbd_us[scancode];
-        if (c != 0)
+        if(c == '\b') 
+            terminal_backspace();
+        else if (c != 0)
             terminal_putchar(c);
     }
 }
