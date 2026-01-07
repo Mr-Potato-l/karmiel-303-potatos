@@ -87,8 +87,14 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		(uint32_t)mmmt < mmap_end;
 		mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
 	{
-		print("Start: {d}, Len: {d}, Size: {d}, Type: {d}\n",
-			(int)mmmt->addr, (int)mmmt->len, mmmt->size, mmmt->type);
+		// uint32_t addr_lo = (uint32_t)(mmmt->addr & 0xFFFFFFFF);
+		// uint32_t addr_hi = (uint32_t)(mmmt->addr >> 32);
+
+		// uint32_t len_lo  = (uint32_t)(mmmt->len & 0xFFFFFFFF);
+		// uint32_t len_hi  = (uint32_t)(mmmt->len >> 32);
+
+		print("Start: {a}, Len: {a}, Size: {d}, Type: {d}\n",
+			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
 	}
 
 	/* Different Paging Tests! */
