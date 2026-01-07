@@ -1,4 +1,5 @@
 #include "pmm.h"
+#include "print.h"
 #include <stdint.h>
 
 // Page size: 4 KB (0x1000 bytes)
@@ -238,18 +239,18 @@ uint32_t pmm_total_free_frames(void) {
 
 // Print memory statistics to the terminal
 void pmm_dump_stats(void) {
-    extern void terminal_writestring(const char*);
+    extern void print(const char*, ...);
     extern char* inttoa(int, char*);
     char buf[64];
 
     // Print total frames
-    terminal_writestring("PMM: total frames: ");
+    print("PMM: total frames: ");
     inttoa((int)total_frames, buf);
-    terminal_writestring(buf);
+    print(buf);
 
     // Print free frames
-    terminal_writestring("\nPMM: free frames: ");
+    print("\nPMM: free frames: ");
     inttoa((int)pmm_total_free_frames(), buf);
-    terminal_writestring(buf);
-    terminal_writestring("\n");
+    print(buf);
+    print("\n");
 }
