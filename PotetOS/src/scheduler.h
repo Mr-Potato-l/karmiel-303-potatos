@@ -11,5 +11,6 @@ void scheduler_init(void);
 int scheduler_create(task_fn_t fn);
 void scheduler_tick(void);
 void scheduler_run_pending(void);
+void scheduler_yield(void);
 
 #endif

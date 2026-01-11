@@ -29,8 +29,22 @@
 
 #define TEST_VIRT 0x400000  // 4MB
 
-static void task_a(void) { print(" Task A "); }
-static void task_b(void) { print(" Task B "); }
+static void task_a(void) {
+	while (1) {
+		print("Task A running\n");
+		/* simple busy delay */
+		for (volatile uint32_t i = 0; i < 200000; i++);
+		scheduler_yield();
+	}
+}
+
+static void task_b(void) {
+	while (1) {
+		print("Task B running\n");
+		for (volatile uint32_t i = 0; i < 200000; i++);
+		scheduler_yield();
+	}
+}
 
 void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 {
