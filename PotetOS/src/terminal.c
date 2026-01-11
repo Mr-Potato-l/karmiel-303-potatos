@@ -160,7 +160,7 @@ int line_is_empty(size_t row) {
 	int empty = 0;
     for (size_t x = 0; x < VGA_WIDTH; x++) {
         if ((terminal_buffer[row * VGA_WIDTH + x] & 0xFF) != ' ')
-            empty++;
+            empty = x+1;// oomves the cursor behind the last character
     }
     return empty;
 }

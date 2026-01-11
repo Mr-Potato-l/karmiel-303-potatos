@@ -1,43 +1,34 @@
-#include <stdint.h>
+#include "paging.h"
+#include "pmm.h"
 
-uint32_t __attribute__((aligned(4096))) page_directory[1024];
-uint32_t __attribute__((aligned(4096))) first_page_table[1024];
+// define a simple paging structure with 4KB identity mapping
+uint32_t page_directory[PAGE_ENTRIES] __attribute__((aligned(4096)));
 
-void paging_init()
-{
-    // Identity map the first 4MB (each entry maps 4KB)
-    for (int i = 0; i < 1024; i++) {
-        first_page_table[i] = (i * 0x1000) | 3;
-        // 3 = present + writable
-    }
-
-    // Clear page directory
-    for (int i = 0; i < 1024; i++) {
-        page_directory[i] = 0x00000002;
-        // writable but not present
-    }
-
-    // Insert our page table into PDE 0
-    page_directory[0] = ((uint32_t)first_page_table) | 3;
+// Load page directory into CR3 (paging manager register)
+static inline void load_page_directory(uint32_t phys_addr) {
+    __asm__ volatile("mov %0, %%cr3" :: "r"(phys_addr));
 }
 
-extern uint32_t page_directory[];
-
-void paging_enable()
-{
-    uint32_t pd_addr = (uint32_t)page_directory;
-
-    __asm__ volatile("mov %0, %%cr3" :: "r"(pd_addr));
-
-    __asm__ volatile(
-    "mov %cr0, %eax\n"
-    "or $0x80000000, %eax\n"
-    "mov %eax, %cr0\n"
-    );
+static inline void enable_paging() {
+    uint32_t cr0;
+    // clearing the CR0
+    __asm__ volatile("mov %%cr0, %0" : "=r"(cr0));
+    // set the paging bit (can't do it directly in inline asm, so we use bitwise or)
+    cr0 |= 0x80000000;
+    // write back to CR0
+    __asm__ volatile("mov %0, %%cr0" :: "r"(cr0));
 }
 
-void init_paging()
-{
-    paging_init();
-    paging_enable();
+void init_paging() {
+    // zero page directory
+    for(int i = 0; i < PAGE_ENTRIES; i++) page_directory[i] = 0;
+
+    // identity map first 4 MB
+    uint32_t table_frame = pmm_alloc_frame();
+    uint32_t* first_table = (uint32_t*)table_frame;
+    for(int i = 0; i < 1024; i++) first_table[i] = (i * PAGE_SIZE) | 3;
+    page_directory[0] = table_frame | 3;
+
+    load_page_directory((uint32_t)page_directory);
+    enable_paging();
 }

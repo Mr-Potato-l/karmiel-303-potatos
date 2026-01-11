@@ -50,6 +50,9 @@ void print(const char* txt, ...)
 
 		else if (spec == 'c')
 			terminal_putchar(va_arg(args, int)); // char promotes to int
+		
+		else if (spec == 'a')
+			print_uint64(va_arg(args, uint64_t));
 
 		continue;
         }
@@ -118,6 +121,21 @@ void print_hex(unsigned int value)
 	for (int j = i - 1; j >= 0; j--) {
 		terminal_putchar(buffer[j]);
 	}
+}
+
+void print_uint64(uint64_t addr)
+{
+	char buffer[8];
+
+    for (int i = 7; i >= 0; i--) {
+        uint8_t digit = addr & 0xF;
+        buffer[i] = (digit < 10) ? ('0' + digit) : ('A' + digit - 10);
+        addr >>= 4;
+    }
+
+    for (int i = 0; i < 8; i++) {
+        terminal_putchar(buffer[i]);
+    }
 }
 
 void print_float(float value)
