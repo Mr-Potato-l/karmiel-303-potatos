@@ -1,9 +1,11 @@
 #include "terminal.h"
+#include "print.h"
 
 size_t terminal_row;
 size_t terminal_column;
 uint8_t terminal_color;
 uint16_t* terminal_buffer;
+// char[VGA_WIDTH] line_buffer;
 
 size_t strlen(const char* str) 
 {
@@ -38,7 +40,7 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
 	terminal_buffer[index] = vga_entry(c, color);
 }
 
-void terminal_scroll(void)
+void terminal_scroll(bool prompt)
 {
 	for (size_t y = 0; y < VGA_HEIGHT; y++) {
 		for (size_t x = 0; x < VGA_WIDTH; x++) {
@@ -53,49 +55,60 @@ void terminal_scroll(void)
 		}
 	}
 	terminal_row = VGA_HEIGHT - 1;
+	terminal_column = 0;
+
+	if (prompt){
+		terminal_putchar('>'); // prompt
+		terminal_column++;
+		update_cursor();
+	}
 }
 
 void terminal_putchar(char c) 
 {
 	// special handling for control characters
 	switch(c) {
+		
+		//will add cache later for up/down arrows
 		case -1: // Up arrow
-			if(terminal_row > 0){
-				terminal_row--;
-				terminal_column = line_is_empty(terminal_row);
-			}
-			update_cursor();
 			return;
 		case -2: // Down arrow
-			if(terminal_row < VGA_HEIGHT - 1){
-				terminal_row++;
+			return;			
 
-				terminal_column = line_is_empty(terminal_row);
-			}
-			update_cursor();
-			return;
 		case -3: // Left arrow
-			if(terminal_column > 0){
+			if(terminal_column > 2){ // prevent moving before prompt
 				terminal_column--;
 				update_cursor();
 			}
 			return;
+
 		case -4: // Right arrow
 			if(terminal_column < VGA_WIDTH - 1){
 				terminal_column++;
 				update_cursor();
 			}
 			return;
+
 		case '\b': // Backspace
 			terminal_backspace();
 			return;
+
 		case '\n': // Newline
 			terminal_column = 0;
 			terminal_row++;
+			terminal_putchar('>');
+			terminal_column++;
+				
 			if (terminal_row == VGA_HEIGHT)
-				terminal_scroll();
+				terminal_scroll(true);
+
+			// for (size_t x = 0; x < line_is_empty(terminal_row-1); x++) {
+			// 	terminal_putchar(terminal_buffer[(terminal_row-1) * VGA_WIDTH + x] & 0xFF);
+			// }
+
 			update_cursor();
 			return;
+
 		case 9: // Tab
 		// 4 spaces for tab
 		for (int i = 0; i < 4; i++) {
@@ -108,7 +121,7 @@ void terminal_putchar(char c)
 	if (++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
 		if (++terminal_row == VGA_HEIGHT)
-			terminal_scroll();
+			terminal_scroll(false);
 	}
 	update_cursor();
 }
@@ -118,26 +131,34 @@ void terminal_backspace(void)
     if (terminal_column == 0 && terminal_row == 12)
         return; // already at top-left
 
-    // Move cursor back
-    if (terminal_column == 0) {
-        terminal_row--;
-        terminal_column = VGA_WIDTH - 1;
+	// prevent deleting prompt
+    if((terminal_buffer[terminal_row*VGA_WIDTH]&0xFF) != '>') { 
 
-        // Jump over trailing spaces backwards
-        size_t index = terminal_row * VGA_WIDTH + terminal_column;
-        while (index > 0 && (terminal_buffer[index] & 0xFF) == ' ' && terminal_column > 0) {
-            index--;
-            terminal_column--;
-            if (terminal_column >= VGA_WIDTH) { // handle wrap-around
-                terminal_column = VGA_WIDTH - 1;
-                terminal_row--;
-            }
+		// Move cursor back
+        if (terminal_column == 0 ){
+			terminal_row--;
+			terminal_column = VGA_WIDTH - 1;
+
+			// Jump over trailing spaces backwards
+			size_t index = terminal_row * VGA_WIDTH + terminal_column;
+			while (index > 0 && (terminal_buffer[index] & 0xFF) == ' ' && terminal_column > 0) {
+				index--;
+				terminal_column--;
+				if (terminal_column >= VGA_WIDTH) { // handle wrap-around
+					terminal_column = VGA_WIDTH - 1;
+					terminal_row--;
+				}
+			}
         }
-    } else {
-        terminal_column--;
+
+		else {
+			terminal_column--;
+		}
     }
 
-    
+	else if (terminal_column>2){ // prevent deleting prompt
+		terminal_column--;
+	}
 
     // Clear the character under cursor
     terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
@@ -163,4 +184,12 @@ int line_is_empty(size_t row) {
             empty = x+1;// oomves the cursor behind the last character
     }
     return empty;
+}
+
+// checks that the user won't delete the first char in line ('>')
+void check_zero_index(){
+	if(terminal_column == 0){
+		terminal_row --;
+		terminal_column = line_is_empty(terminal_row);
+	}
 }
