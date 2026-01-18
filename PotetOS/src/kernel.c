@@ -14,6 +14,7 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
+#include "Scanf.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -32,13 +33,18 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	initializer(mbd);
 
 	print("PotetOS Kernel Initialized!\n");
-	print("--------------------------------------------------------------------------------");
+
+	char* x = "empty";
+	print("before scanf: x = {s}\n", x);
+	scanf("{s}", x);
+	print("after scanf: x = {s}\n", x);
 
 
-	// Keep CPU running and wait for interrupts
-	while (1) {
-		asm volatile ("hlt");
-	}
+
+	// // Keep CPU running and wait for interrupts
+	// while (1) {
+	// 	asm volatile ("hlt");
+	// }
 }
 
 // Kernel initialization routine
