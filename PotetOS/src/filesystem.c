@@ -1,7 +1,9 @@
 #include "filesystem.h"
 #include "heap.h"
 #include "print.h"
-#include <string.h>
+
+/* Forward declare memset since we can't use standard library */
+extern void *memset(void *dst, int val, size_t count);
 
 /* Global file system instance */
 static filesystem_t g_fs;
