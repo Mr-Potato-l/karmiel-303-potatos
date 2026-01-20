@@ -8,9 +8,11 @@
 /* File System Constants */
 #define MAX_FILENAME_LEN    256
 #define MAX_FILES_OPEN      16
-#define MAX_FILES_TOTAL     512
+#define MAX_FILES_TOTAL     16
 #define INODE_SIZE          256
 #define BLOCK_SIZE          4096
+#define MAX_BLOCKS          32
+#define MAX_BLOCKS_PER_INODE 16
 
 /* File Types */
 typedef enum {
@@ -32,7 +34,7 @@ typedef struct {
     file_type_t type;
     size_t size;
     uint32_t block_count;
-    uint32_t *blocks;              /* Pointers to data blocks */
+    uint32_t blocks[MAX_BLOCKS_PER_INODE];  /* Fixed size array for block pointers */
     uint32_t created_time;
     uint32_t modified_time;
     uint32_t accessed_time;

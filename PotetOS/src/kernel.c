@@ -180,7 +180,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	file_perms_t file_perms = { .permissions = 0644, .uid = 0, .gid = 0 };
 	inode_t *file_inode = fs_inode_create(FILE_TYPE_REGULAR, file_perms);
 	if (file_inode) {
-		print("[TEST] Regular file inode created (inode #%u): PASS\n", file_inode->inode_number);
+		print("[TEST] Regular file inode created (inode #{d}): PASS\n", file_inode->inode_number);
 	} else {
 		print("[TEST] Regular file inode creation: FAIL\n");
 	}
@@ -189,7 +189,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	uint32_t block1 = fs_allocate_block();
 	uint32_t block2 = fs_allocate_block();
 	if (block1 != 0xFFFFFFFF && block2 != 0xFFFFFFFF && block1 != block2) {
-		print("[TEST] Block allocation: PASS (blocks %u, %u)\n", block1, block2);
+		print("[TEST] Block allocation: PASS (blocks {d}, {d})\n", block1, block2);
 	} else {
 		print("[TEST] Block allocation: FAIL\n");
 	}
@@ -197,7 +197,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	/* Test 4: Get block address */
 	void *block_addr = fs_get_block_address(block1);
 	if (block_addr) {
-		print("[TEST] Block address retrieval: PASS (addr: 0x%x)\n", (uint32_t)block_addr);
+		print("[TEST] Block address retrieval: PASS (addr: {x})\n", (uint32_t)block_addr);
 	} else {
 		print("[TEST] Block address retrieval: FAIL\n");
 	}
@@ -206,7 +206,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	file_perms_t dir_perms = { .permissions = 0755, .uid = 0, .gid = 0 };
 	int32_t dir_inode_num = fs_mkdir("/home", dir_perms);
 	if (dir_inode_num >= 0) {
-		print("[TEST] Directory creation: PASS (inode #%u)\n", dir_inode_num);
+		print("[TEST] Directory creation: PASS (inode #{d})\n", dir_inode_num);
 	} else {
 		print("[TEST] Directory creation: FAIL\n");
 	}
@@ -214,7 +214,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	/* Test 6: File handle operations */
 	int32_t handle = fs_open("testfile.txt", 0x01);  // Read flag
 	if (handle >= 0) {
-		print("[TEST] File open: PASS (handle %u)\n", handle);
+		print("[TEST] File open: PASS (handle {d})\n", handle);
 		fs_close(handle);
 		print("[TEST] File close: PASS\n");
 	} else {
@@ -224,7 +224,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	/* Test 7: Free a block and verify */
 	fs_free_block(block1);
 	if (g_fs.free_blocks > 0) {
-		print("[TEST] Block deallocation: PASS (free blocks: %u)\n", g_fs.free_blocks);
+		print("[TEST] Block deallocation: PASS (free blocks: {d})\n", g_fs.free_blocks);
 	} else {
 		print("[TEST] Block deallocation: FAIL\n");
 	}
@@ -243,8 +243,8 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	scheduler_init();
 
 	/* Create two simple tasks for demonstration */
-	scheduler_create(task_a);
-	scheduler_create(task_b);
+	// scheduler_create(task_a);
+	// scheduler_create(task_b);
 
 
 	print("--------------------------------------------------------------------------------");

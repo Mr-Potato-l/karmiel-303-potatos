@@ -11,6 +11,11 @@ filesystem_t g_fs;
 /* File handle table */
 static file_handle_t g_file_table[MAX_FILES_OPEN];
 
+/* Static storage for bitmaps and inode table to avoid heap issues */
+static uint8_t g_block_bitmap_storage[(MAX_BLOCKS + 7) / 8];
+static uint8_t g_inode_bitmap_storage[(MAX_FILES_TOTAL + 7) / 8];
+static inode_t g_inode_table_storage[MAX_FILES_TOTAL];
+
 /**
  * Initialize the file system
  * Sets up in-memory structures for file management
@@ -23,7 +28,7 @@ void fs_init(void)
     g_fs.magic_number = 0xDEADBEEF;
     g_fs.block_size = BLOCK_SIZE;
     g_fs.inode_size = INODE_SIZE;
-    g_fs.total_blocks = 1024;          /* Allocate space for 1024 blocks */
+    g_fs.total_blocks = MAX_BLOCKS;
     g_fs.total_inodes = MAX_FILES_TOTAL;
     g_fs.free_blocks = g_fs.total_blocks;
     g_fs.free_inodes = g_fs.total_inodes;
@@ -32,23 +37,32 @@ void fs_init(void)
     g_fs.block_bitmap_size = (g_fs.total_blocks + 7) / 8;
     g_fs.inode_bitmap_size = (g_fs.total_inodes + 7) / 8;
 
-    /* Allocate bitmaps from heap */
-    g_fs.block_bitmap = (uint32_t *)kmalloc(g_fs.block_bitmap_size);
-    g_fs.inode_bitmap = (uint32_t *)kmalloc(g_fs.inode_bitmap_size);
+    /* Use static storage instead of heap allocation */
+    print("[FS] Initializing block bitmap ({d} bytes)...\n", g_fs.block_bitmap_size);
+    g_fs.block_bitmap = (uint32_t *)g_block_bitmap_storage;
 
-    /* Allocate inode table from heap */
-    g_fs.inode_table = (inode_t *)kmalloc(sizeof(inode_t) * g_fs.total_inodes);
+    print("[FS] Initializing inode bitmap ({d} bytes)...\n", g_fs.inode_bitmap_size);
+    g_fs.inode_bitmap = (uint32_t *)g_inode_bitmap_storage;
 
-    if (!g_fs.block_bitmap || !g_fs.inode_bitmap || !g_fs.inode_table) {
-        print("[FS] ERROR: Failed to allocate memory for file system structures\n");
-        return;
+    print("[FS] Initializing inode table ({d} bytes)...\n", 
+          (uint32_t)(sizeof(inode_t) * g_fs.total_inodes));
+    g_fs.inode_table = g_inode_table_storage;
+
+    /* Zero out the bitmaps and inode table */
+    print("[FS] Zeroing bitmaps...\n");
+    for (uint32_t i = 0; i < g_fs.block_bitmap_size; i++) {
+        ((uint8_t*)g_fs.block_bitmap)[i] = 0;
+    }
+    for (uint32_t i = 0; i < g_fs.inode_bitmap_size; i++) {
+        ((uint8_t*)g_fs.inode_bitmap)[i] = 0;
+    }
+    
+    print("[FS] Zeroing inode table...\n");
+    for (uint32_t i = 0; i < g_fs.total_inodes; i++) {
+        memset(&g_fs.inode_table[i], 0, sizeof(inode_t));
     }
 
-    /* Initialize bitmaps (0 = free, 1 = used) */
-    memset(g_fs.block_bitmap, 0, g_fs.block_bitmap_size);
-    memset(g_fs.inode_bitmap, 0, g_fs.inode_bitmap_size);
-    memset(g_fs.inode_table, 0, sizeof(inode_t) * g_fs.total_inodes);
-
+    print("[FS] Initializing file handle table...\n");
     /* Initialize file handle table */
     for (int i = 0; i < MAX_FILES_OPEN; i++) {
         g_file_table[i].is_open = false;
@@ -57,6 +71,7 @@ void fs_init(void)
         g_file_table[i].flags = 0;
     }
 
+    print("[FS] Creating root directory...\n");
     /* Create root directory inode */
     file_perms_t root_perms = {
         .permissions = 0755,
@@ -68,8 +83,8 @@ void fs_init(void)
     if (g_fs.root_inode) {
         g_fs.root_inode->inode_number = 0;
         print("[FS] File system initialized successfully\n");
-        print("[FS] Root inode created at address: 0x%x\n", (uint32_t)g_fs.root_inode);
-        print("[FS] Total blocks: %u, Total inodes: %u\n", 
+        print("[FS] Root inode created at address: {x}\n", (uint32_t)g_fs.root_inode);
+        print("[FS] Total blocks: {d}, Total inodes: {d}\n", 
               g_fs.total_blocks, g_fs.total_inodes);
     } else {
         print("[FS] ERROR: Failed to create root inode\n");
@@ -106,16 +121,8 @@ inode_t* fs_inode_create(file_type_t type, file_perms_t perms)
     inode->type = type;
     inode->size = 0;
     inode->block_count = 0;
-    inode->blocks = (uint32_t *)kmalloc(sizeof(uint32_t) * 256);  /* Support up to 256 blocks */
     inode->link_count = 1;
     inode->perms = perms;
-
-    if (!inode->blocks) {
-        print("[FS] ERROR: Failed to allocate block pointer array for inode\n");
-        return NULL;
-    }
-
-    memset(inode->blocks, 0, sizeof(uint32_t) * 256);
 
     /* Mark inode as used in bitmap */
     fs_set_inode_bitmap(inode_num, true);
@@ -189,6 +196,11 @@ uint32_t fs_allocate_block(void)
         uint32_t byte_idx = i / 8;
         uint32_t bit_idx = i % 8;
 
+        if (byte_idx >= g_fs.block_bitmap_size) {
+            print("[FS] ERROR: Bitmap index out of bounds\n");
+            return 0xFFFFFFFF;
+        }
+
         if (!(bitmap[byte_idx] & (1 << bit_idx))) {
             /* Found free block */
             fs_set_block_bitmap(i, true);
@@ -207,7 +219,7 @@ uint32_t fs_allocate_block(void)
 void fs_free_block(uint32_t block_number)
 {
     if (block_number >= g_fs.total_blocks) {
-        print("[FS] ERROR: Invalid block number: %u\n", block_number);
+        print("[FS] ERROR: Invalid block number: {d}\n", block_number);
         return;
     }
 
