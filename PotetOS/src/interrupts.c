@@ -1,6 +1,7 @@
 #include "interrupts.h"
 #include "keyboard.h"
 #include "pic.h"
+#include "pit.h"
 
 void isr_common_handler(uint32_t vector_number) {
     print("Interrupt ");
@@ -30,6 +31,7 @@ void irq_common_handler(uint32_t irq)
     switch (irq)
     {
         case 0:
+            pit_handle_tick();
             break;
         case 1:
             //print("Keyboard IRQ\n");
