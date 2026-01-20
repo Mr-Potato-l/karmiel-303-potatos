@@ -8,6 +8,7 @@
 #include "idt.h"
 #include "pic.h"
 #include "io.h"
+#include "pit.h"
 #include "print.h"
 #include "multiboot.h"
 #include "paging.h"
@@ -27,6 +28,23 @@
 #endif
 
 #define TEST_VIRT 0x400000  // 4MB
+
+static void task_a(void) {
+	while (1) {
+		print("Task A running\n");
+		/* simple busy delay */
+		for (volatile uint32_t i = 0; i < 200000; i++);
+		scheduler_yield();
+	}
+}
+
+static void task_b(void) {
+	while (1) {
+		print("Task B running\n");
+		for (volatile uint32_t i = 0; i < 200000; i++);
+		scheduler_yield();
+	}
+}
 
 void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 {
@@ -48,6 +66,9 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
+
+	/* Initialize PIT for 100Hz timer */
+	pit_init(100);
 
 	/* Initialize the PMM */
 	pmm_init(mbd->mmap_addr, mbd->mmap_length, 0);
@@ -164,12 +185,28 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 
 	__asm__ volatile("sti"); // Enable interrupts
 
+	scheduler_init();
+
+	/* Create two simple tasks for demonstration */
+	scheduler_create(task_a);
+	scheduler_create(task_b);
+
 
 	print("--------------------------------------------------------------------------------");
 
 
-	// Keep CPU running and wait for interrupts
+	// Keep CPU running and wait for interrupts. Print a message every 100 ticks.
+	uint32_t last_ticks = pit_get_ticks();
 	while (1) {
+		uint32_t t = pit_get_ticks();
+		if (t != last_ticks) {
+			last_ticks = t;
+			if (t % 100 == 0) {
+				print("\nTicks: {d}\n", t);
+			}
+		}
+		/* Run any pending scheduled tasks (cooperative) */
+		scheduler_run_pending();
 		asm volatile ("hlt");
 	}
 }
