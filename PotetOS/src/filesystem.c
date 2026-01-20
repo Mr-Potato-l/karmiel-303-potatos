@@ -6,7 +6,7 @@
 extern void *memset(void *dst, int val, size_t count);
 
 /* Global file system instance */
-static filesystem_t g_fs;
+filesystem_t g_fs;
 
 /* File handle table */
 static file_handle_t g_file_table[MAX_FILES_OPEN];

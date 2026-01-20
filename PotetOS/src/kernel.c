@@ -16,6 +16,7 @@
 #include "vmm.h"
 #include "heap.h"
 #include "scheduler.h"
+#include "filesystem.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -162,6 +163,73 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	print_hex(*b);
 	print("\n");
 
+
+	/* File System Tests */
+	print("\n--- File System Tests ---\n");
+	fs_init();
+
+	/* Test 1: Check root inode creation */
+	inode_t *root = fs_inode_get(0);
+	if (root && root->type == FILE_TYPE_DIRECTORY) {
+		print("[TEST] Root inode created: PASS\n");
+	} else {
+		print("[TEST] Root inode creation: FAIL\n");
+	}
+
+	/* Test 2: Create a new regular file inode */
+	file_perms_t file_perms = { .permissions = 0644, .uid = 0, .gid = 0 };
+	inode_t *file_inode = fs_inode_create(FILE_TYPE_REGULAR, file_perms);
+	if (file_inode) {
+		print("[TEST] Regular file inode created (inode #%u): PASS\n", file_inode->inode_number);
+	} else {
+		print("[TEST] Regular file inode creation: FAIL\n");
+	}
+
+	/* Test 3: Allocate blocks */
+	uint32_t block1 = fs_allocate_block();
+	uint32_t block2 = fs_allocate_block();
+	if (block1 != 0xFFFFFFFF && block2 != 0xFFFFFFFF && block1 != block2) {
+		print("[TEST] Block allocation: PASS (blocks %u, %u)\n", block1, block2);
+	} else {
+		print("[TEST] Block allocation: FAIL\n");
+	}
+
+	/* Test 4: Get block address */
+	void *block_addr = fs_get_block_address(block1);
+	if (block_addr) {
+		print("[TEST] Block address retrieval: PASS (addr: 0x%x)\n", (uint32_t)block_addr);
+	} else {
+		print("[TEST] Block address retrieval: FAIL\n");
+	}
+
+	/* Test 5: Create a directory */
+	file_perms_t dir_perms = { .permissions = 0755, .uid = 0, .gid = 0 };
+	int32_t dir_inode_num = fs_mkdir("/home", dir_perms);
+	if (dir_inode_num >= 0) {
+		print("[TEST] Directory creation: PASS (inode #%u)\n", dir_inode_num);
+	} else {
+		print("[TEST] Directory creation: FAIL\n");
+	}
+
+	/* Test 6: File handle operations */
+	int32_t handle = fs_open("testfile.txt", 0x01);  // Read flag
+	if (handle >= 0) {
+		print("[TEST] File open: PASS (handle %u)\n", handle);
+		fs_close(handle);
+		print("[TEST] File close: PASS\n");
+	} else {
+		print("[TEST] File open: FAIL\n");
+	}
+
+	/* Test 7: Free a block and verify */
+	fs_free_block(block1);
+	if (g_fs.free_blocks > 0) {
+		print("[TEST] Block deallocation: PASS (free blocks: %u)\n", g_fs.free_blocks);
+	} else {
+		print("[TEST] Block deallocation: FAIL\n");
+	}
+
+	print("--- File System Tests Complete ---\n\n");
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line

@@ -71,6 +71,9 @@ typedef struct {
     inode_t *root_inode;           /* Pointer to root directory */
 } filesystem_t;
 
+/* Global file system instance (exposed for testing/debugging) */
+extern filesystem_t g_fs;
+
 /* File System Operations */
 void fs_init(void);
 void fs_shutdown(void);
