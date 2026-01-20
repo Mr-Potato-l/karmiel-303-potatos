@@ -35,9 +35,10 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	print("PotetOS Kernel Initialized!\n");
 
 	char* x = "empty";
-	print("before scanf: x = {s}\n", x);
-	scanf("{s}", x);
-	print("after scanf: x = {s}\n", x);
+	int tst = 0;
+	print("before scanf: x = {s},tst = {d}\n", x, tst);
+	scanf("{s}{d}", x, &tst);
+	print("after scanf: x = {s},tst = {d}\n", x, tst);
 
 
 
