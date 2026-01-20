@@ -15,7 +15,7 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
-#include "scheduler.h"
+#include "Malloc.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -82,42 +82,55 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	init_paging();
 
 	vmm_init();
-	
 	print("Paging init...OK!\n\n");
 
 
 	heap_init();
+	print("Heap init...OK!\n\n");
 
-	print("Heap init...OK!\n");
 
+	malloc_init();
+	print("Malloc init...OK!\n\n");
 	
-	print("Available Memory Map:\n");
-	/* Make sure the magic number matches for memory mapping*/
-    if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-        print("invalid magic number!\n");
-    }
+	// ========== MALLOC TESTING ==========
+	// Uncomment the lines below to run malloc tests
+	
+	// Run comprehensive test suite
+	malloc_test();
+	
+	// Dump statistics to see heap state
+	malloc_dump_stats();
+	
+	// ====================================
+	
+	
+	// print("Available Memory Map:\n");
+	// /* Make sure the magic number matches for memory mapping*/
+    // if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+    //     print("invalid magic number!\n");
+    // }
 
-    /* Check bit 6 to see if we have a valid memory map */
-    if(!(mbd->flags >> 6 & 0x1)) {
-        print("invalid memory map given by GRUB bootloader\n");
-    }
+    // /* Check bit 6 to see if we have a valid memory map */
+    // if(!(mbd->flags >> 6 & 0x1)) {
+    //     print("invalid memory map given by GRUB bootloader\n");
+    // }
+	//
+    // /* Loop through the memory map and display the values */
+    // uint32_t mmap_end = mbd->mmap_addr + mbd->mmap_length;
 
-    /* Loop through the memory map and display the values */
-    uint32_t mmap_end = mbd->mmap_addr + mbd->mmap_length;
+	// for (multiboot_memory_map_t* mmmt = (multiboot_memory_map_t*) mbd->mmap_addr;
+	// 	(uint32_t)mmmt < mmap_end;
+	// 	mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
+	// {
+	// 	// uint32_t addr_lo = (uint32_t)(mmmt->addr & 0xFFFFFFFF);
+	// 	// uint32_t addr_hi = (uint32_t)(mmmt->addr >> 32);
 
-	for (multiboot_memory_map_t* mmmt = (multiboot_memory_map_t*) mbd->mmap_addr;
-		(uint32_t)mmmt < mmap_end;
-		mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
-	{
-		// uint32_t addr_lo = (uint32_t)(mmmt->addr & 0xFFFFFFFF);
-		// uint32_t addr_hi = (uint32_t)(mmmt->addr >> 32);
+	// 	// uint32_t len_lo  = (uint32_t)(mmmt->len & 0xFFFFFFFF);
+	// 	// uint32_t len_hi  = (uint32_t)(mmmt->len >> 32);
 
-		// uint32_t len_lo  = (uint32_t)(mmmt->len & 0xFFFFFFFF);
-		// uint32_t len_hi  = (uint32_t)(mmmt->len >> 32);
-
-		print("Start: {a}, Len: {a}, Size: {d}, Type: {d}\n",
-			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
-	}
+	// 	print("Start: {a}, Len: {a}, Size: {d}, Type: {d}\n",
+	// 		mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
+	// }
 
 	/* Different Paging Tests! */
 
@@ -130,15 +143,15 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("Paging BROKEN\n");
 	}
 
-	uint32_t frame_a = pmm_alloc_frame();
-	uint32_t frame_b = pmm_alloc_frame();
+	// uint32_t frame_a = pmm_alloc_frame();
+	// uint32_t frame_b = pmm_alloc_frame();
 
-	print("Allocated frames:\n");
-	print("a: ");
-	print_hex(frame_a);
-	print("\nb: ");
-	print_hex(frame_b);
-	print("\n");
+	// print("Allocated frames:\n");
+	// print("a: ");
+	// print_hex(frame_a);
+	// print("\nb: ");
+	// print_hex(frame_b);
+	// print("\n");
 
 	uint32_t phys = pmm_alloc_frame();
 	map_page(TEST_VIRT, phys, 0x3); // present | rw
@@ -150,24 +163,24 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("Virtual mapping OK\n");
 	}
 
-	int* a = kmalloc(sizeof(int));
-	int* b = kmalloc(sizeof(int));
+	// int* a = kmalloc(sizeof(int));
+	// int* b = kmalloc(sizeof(int));
 
-	*a = 1337;
-	*b = 0xDEADBEEF;
+	// *a = 1337;
+	// *b = 0xDEADBEEF;
 
-	print("heap a = ");
-	print_hex(*a);
-	print("\nheap b = ");
-	print_hex(*b);
-	print("\n");
+	// print("heap a = ");
+	// print_hex(*a);
+	// print("\nheap b = ");
+	// print_hex(*b);
+	// print("\n");
 
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
 	// uint8_t mask = inb(PIC1_DATA);
-	// terminal_writestring("PIC1 mask: ");
+	// print("PIC1 mask: ");
 	// terminal_putchar('0' + mask);
 
 	__asm__ volatile("sti"); // Enable interrupts
