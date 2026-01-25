@@ -9,6 +9,7 @@
 #define MAX_FILENAME_LEN    256
 #define MAX_FILES_OPEN      16
 #define MAX_FILES_TOTAL     16
+#define MAX_DIR_ENTRIES     8       /* Max files/dirs per directory */
 #define INODE_SIZE          256
 #define BLOCK_SIZE          4096
 #define MAX_BLOCKS          32
@@ -28,6 +29,12 @@ typedef struct {
     uint16_t gid;
 } file_perms_t;
 
+/* Directory entry */
+typedef struct {
+    uint32_t inode_number;
+    char filename[MAX_FILENAME_LEN];
+} dir_entry_t;
+
 /* Inode structure - represents a file/directory */
 typedef struct {
     uint32_t inode_number;
@@ -40,13 +47,10 @@ typedef struct {
     uint32_t accessed_time;
     uint16_t link_count;
     file_perms_t perms;
+    /* Directory-specific data */
+    uint32_t entry_count;                   /* Number of entries in directory */
+    dir_entry_t entries[MAX_DIR_ENTRIES];   /* Directory entries */
 } inode_t;
-
-/* Directory entry */
-typedef struct {
-    uint32_t inode_number;
-    char filename[MAX_FILENAME_LEN];
-} dir_entry_t;
 
 /* File handle for open files */
 typedef struct {
@@ -93,9 +97,11 @@ size_t fs_write(int32_t handle, const void *buffer, size_t bytes);
 int32_t fs_seek(int32_t handle, int32_t offset, int whence);
 
 /* Directory operations */
-int32_t fs_mkdir(const char *path, file_perms_t perms);
-int32_t fs_rmdir(const char *path);
-dir_entry_t* fs_readdir(inode_t *dir_inode);
+int32_t fs_mkdir(const char *name, inode_t *parent, file_perms_t perms);
+int32_t fs_rmdir(const char *name, inode_t *parent);
+dir_entry_t* fs_readdir(inode_t *dir_inode, uint32_t *count);
+inode_t* fs_find_in_dir(inode_t *dir_inode, const char *name);
+int32_t fs_add_dir_entry(inode_t *dir_inode, const char *name, uint32_t inode_num);
 
 /* Block operations */
 uint32_t fs_allocate_block(void);
@@ -106,5 +112,6 @@ void* fs_get_block_address(uint32_t block_number);
 uint32_t fs_get_free_inode(void);
 void fs_set_inode_bitmap(uint32_t inode_num, bool used);
 void fs_set_block_bitmap(uint32_t block_num, bool used);
+int32_t fs_strcmp(const char *s1, const char *s2);
 
 #endif

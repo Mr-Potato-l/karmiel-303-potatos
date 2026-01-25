@@ -204,7 +204,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 
 	/* Test 5: Create a directory */
 	file_perms_t dir_perms = { .permissions = 0755, .uid = 0, .gid = 0 };
-	int32_t dir_inode_num = fs_mkdir("/home", dir_perms);
+	int32_t dir_inode_num = fs_mkdir("home", g_fs.root_inode, dir_perms);
 	if (dir_inode_num >= 0) {
 		print("[TEST] Directory creation: PASS (inode #{d})\n", dir_inode_num);
 	} else {
@@ -230,6 +230,106 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	}
 
 	print("--- File System Tests Complete ---\n\n");
+
+	/* Directory Tests */
+	print("\n--- Directory Tests ---\n");
+
+	/* Test 1: Create subdirectory in root */
+	file_perms_t test_perms = { .permissions = 0755, .uid = 0, .gid = 0 };
+	int32_t home_dir = fs_mkdir("home", g_fs.root_inode, test_perms);
+	if (home_dir >= 0) {
+		print("[TEST] Create /home directory: PASS (inode {d})\n", home_dir);
+	} else {
+		print("[TEST] Create /home directory: FAIL\n");
+	}
+
+	/* Test 2: Create another subdirectory */
+	int32_t var_dir = fs_mkdir("var", g_fs.root_inode, test_perms);
+	if (var_dir >= 0) {
+		print("[TEST] Create /var directory: PASS (inode {d})\n", var_dir);
+	} else {
+		print("[TEST] Create /var directory: FAIL\n");
+	}
+
+	/* Test 3: Create nested subdirectory */
+	inode_t *home_inode = fs_inode_get(home_dir);
+	int32_t user_dir = fs_mkdir("user", home_inode, test_perms);
+	if (user_dir >= 0) {
+		print("[TEST] Create /home/user directory: PASS (inode {d})\n", user_dir);
+	} else {
+		print("[TEST] Create /home/user directory: FAIL\n");
+	}
+
+	/* Test 4: List root directory entries */
+	uint32_t root_entry_count = 0;
+	dir_entry_t *root_entries = fs_readdir(g_fs.root_inode, &root_entry_count);
+	if (root_entries && root_entry_count == 2) {
+		print("[TEST] List root directory: PASS ({d} entries)\n", root_entry_count);
+		for (uint32_t i = 0; i < root_entry_count; i++) {
+			print("  - {s} (inode {d})\n", 
+				root_entries[i].filename, root_entries[i].inode_number);
+		}
+	} else {
+		print("[TEST] List root directory: FAIL (got {d} entries, expected 2)\n", root_entry_count);
+	}
+
+	/* Test 5: List /home directory entries */
+	uint32_t home_entry_count = 0;
+	dir_entry_t *home_entries = fs_readdir(home_inode, &home_entry_count);
+	if (home_entries && home_entry_count == 1) {
+		print("[TEST] List /home directory: PASS ({d} entry)\n", home_entry_count);
+		print("  - {s} (inode {d})\n", 
+			home_entries[0].filename, home_entries[0].inode_number);
+	} else {
+		print("[TEST] List /home directory: FAIL (got {d} entries, expected 1)\n", home_entry_count);
+	}
+
+	/* Test 6: Find file by name in directory */
+	inode_t *found = fs_find_in_dir(g_fs.root_inode, "home");
+	if (found && found->inode_number == home_dir) {
+		print("[TEST] Find 'home' in root: PASS (inode {d})\n", found->inode_number);
+	} else {
+		print("[TEST] Find 'home' in root: FAIL\n");
+	}
+
+	/* Test 7: Find non-existent file */
+	inode_t *not_found = fs_find_in_dir(g_fs.root_inode, "nonexistent");
+	if (not_found == NULL) {
+		print("[TEST] Find non-existent file: PASS (correctly returned NULL)\n");
+	} else {
+		print("[TEST] Find non-existent file: FAIL\n");
+	}
+
+	/* Test 8: Remove empty directory */
+	int32_t tmp_dir = fs_mkdir("tmp", g_fs.root_inode, test_perms);
+	if (tmp_dir >= 0) {
+		print("[TEST] Create /tmp for removal test: PASS (inode {d})\n", tmp_dir);
+		int32_t rm_result = fs_rmdir("tmp", g_fs.root_inode);
+		if (rm_result == 0) {
+			print("[TEST] Remove /tmp directory: PASS\n");
+		} else {
+			print("[TEST] Remove /tmp directory: FAIL\n");
+		}
+	}
+
+	/* Test 9: Try to remove non-empty directory (should fail) */
+	int32_t rm_home = fs_rmdir("home", g_fs.root_inode);
+	if (rm_home != 0) {
+		print("[TEST] Prevent removal of non-empty directory: PASS (correctly rejected)\n");
+	} else {
+		print("[TEST] Prevent removal of non-empty directory: FAIL\n");
+	}
+
+	/* Test 10: Check root directory has correct number of entries after tests */
+	uint32_t final_count = 0;
+	fs_readdir(g_fs.root_inode, &final_count);
+	if (final_count == 2) {
+		print("[TEST] Final root directory count: PASS ({d} entries)\n", final_count);
+	} else {
+		print("[TEST] Final root directory count: FAIL (got {d}, expected 2)\n", final_count);
+	}
+
+	print("--- Directory Tests Complete ---\n\n");
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line

@@ -302,7 +302,7 @@ void fs_set_block_bitmap(uint32_t block_num, bool used)
 /**
  * Open a file
  */
-int32_t fs_open(const char *filename, uint8_t flags)
+int32_t fs_open(const char *filename __attribute__((unused)), uint8_t flags)
 {
     /* Find free file handle */
     for (int i = 0; i < MAX_FILES_OPEN; i++) {
@@ -351,7 +351,7 @@ size_t fs_read(int32_t handle, void *buffer, size_t bytes)
 /**
  * Write to a file
  */
-size_t fs_write(int32_t handle, const void *buffer, size_t bytes)
+size_t fs_write(int32_t handle, const void *buffer __attribute__((unused)), size_t bytes __attribute__((unused)))
 {
     if (handle < 0 || handle >= MAX_FILES_OPEN || !g_file_table[handle].is_open) {
         print("[FS] ERROR: Invalid file handle for write\n");
@@ -363,9 +363,170 @@ size_t fs_write(int32_t handle, const void *buffer, size_t bytes)
 }
 
 /**
+ * Add an entry to a directory
+ */
+int32_t fs_add_dir_entry(inode_t *dir_inode, const char *name, uint32_t inode_num)
+{
+    if (!dir_inode || dir_inode->type != FILE_TYPE_DIRECTORY) {
+        print("[FS] ERROR: Not a directory\n");
+        return -1;
+    }
+
+    if (dir_inode->entry_count >= MAX_DIR_ENTRIES) {
+        print("[FS] ERROR: Directory is full\n");
+        return -1;
+    }
+
+    /* Check if name already exists */
+    for (uint32_t i = 0; i < dir_inode->entry_count; i++) {
+        if (fs_strcmp(dir_inode->entries[i].filename, name) == 0) {
+            print("[FS] ERROR: Entry already exists\n");
+            return -1;
+        }
+    }
+
+    /* Add new entry */
+    uint32_t idx = dir_inode->entry_count;
+    dir_inode->entries[idx].inode_number = inode_num;
+    
+    /* Copy filename */
+    uint32_t name_len = 0;
+    while (name[name_len] && name_len < (MAX_FILENAME_LEN - 1)) {
+        dir_inode->entries[idx].filename[name_len] = name[name_len];
+        name_len++;
+    }
+    dir_inode->entries[idx].filename[name_len] = '\0';
+    
+    dir_inode->entry_count++;
+    return 0;
+}
+
+/**
+ * Find an entry in a directory by name
+ */
+inode_t* fs_find_in_dir(inode_t *dir_inode, const char *name)
+{
+    if (!dir_inode || dir_inode->type != FILE_TYPE_DIRECTORY) {
+        return NULL;
+    }
+
+    for (uint32_t i = 0; i < dir_inode->entry_count; i++) {
+        if (fs_strcmp(dir_inode->entries[i].filename, name) == 0) {
+            return fs_inode_get(dir_inode->entries[i].inode_number);
+        }
+    }
+
+    return NULL;
+}
+
+/**
+ * Create a directory in a parent directory
+ */
+int32_t fs_mkdir(const char *name, inode_t *parent, file_perms_t perms)
+{
+    if (!parent || parent->type != FILE_TYPE_DIRECTORY) {
+        print("[FS] ERROR: Parent is not a directory\n");
+        return -1;
+    }
+
+    /* Create new directory inode */
+    inode_t *dir_inode = fs_inode_create(FILE_TYPE_DIRECTORY, perms);
+    if (!dir_inode) {
+        print("[FS] ERROR: Failed to create directory inode\n");
+        return -1;
+    }
+
+    /* Add entry to parent */
+    if (fs_add_dir_entry(parent, name, dir_inode->inode_number) != 0) {
+        print("[FS] ERROR: Failed to add directory entry to parent\n");
+        fs_inode_delete(dir_inode->inode_number);
+        return -1;
+    }
+
+    print("[FS] Created directory '{s}' (inode {d})\n", name, dir_inode->inode_number);
+    return dir_inode->inode_number;
+}
+
+/**
+ * Remove a directory from parent
+ */
+int32_t fs_rmdir(const char *name, inode_t *parent)
+{
+    if (!parent || parent->type != FILE_TYPE_DIRECTORY) {
+        print("[FS] ERROR: Parent is not a directory\n");
+        return -1;
+    }
+
+    /* Find the entry */
+    uint32_t idx = 0xFFFFFFFF;
+    for (uint32_t i = 0; i < parent->entry_count; i++) {
+        if (fs_strcmp(parent->entries[i].filename, name) == 0) {
+            idx = i;
+            break;
+        }
+    }
+
+    if (idx == 0xFFFFFFFF) {
+        print("[FS] ERROR: Entry not found\n");
+        return -1;
+    }
+
+    uint32_t inode_num = parent->entries[idx].inode_number;
+    inode_t *inode = fs_inode_get(inode_num);
+
+    /* Check if directory is empty (except . and ..) */
+    if (inode && inode->type == FILE_TYPE_DIRECTORY && inode->entry_count > 0) {
+        print("[FS] ERROR: Directory not empty\n");
+        return -1;
+    }
+
+    /* Remove entry by shifting */
+    for (uint32_t i = idx; i < parent->entry_count - 1; i++) {
+        parent->entries[i] = parent->entries[i + 1];
+    }
+    parent->entry_count--;
+
+    /* Delete the inode */
+    if (inode) {
+        fs_inode_delete(inode_num);
+    }
+
+    print("[FS] Removed directory '{s}'\n", name);
+    return 0;
+}
+
+/**
+ * Read directory entries
+ */
+dir_entry_t* fs_readdir(inode_t *dir_inode, uint32_t *count)
+{
+    if (!dir_inode || dir_inode->type != FILE_TYPE_DIRECTORY) {
+        return NULL;
+    }
+
+    if (count) {
+        *count = dir_inode->entry_count;
+    }
+
+    return dir_inode->entries;
+}
+
+/**
+ * String comparison helper
+ */
+int32_t fs_strcmp(const char *s1, const char *s2)
+{
+    while (*s1 && *s2 && *s1 == *s2) {
+        s1++;
+        s2++;
+    }
+    return *s1 - *s2;
+}
+
+/**
  * Seek in a file
  */
-int32_t fs_seek(int32_t handle, int32_t offset, int whence)
+int32_t fs_seek(int32_t handle, int32_t offset __attribute__((unused)), int whence __attribute__((unused)))
 {
     if (handle < 0 || handle >= MAX_FILES_OPEN || !g_file_table[handle].is_open) {
         print("[FS] ERROR: Invalid file handle for seek\n");
@@ -374,40 +535,4 @@ int32_t fs_seek(int32_t handle, int32_t offset, int whence)
 
     /* Placeholder implementation */
     return 0;
-}
-
-/**
- * Create a directory
- */
-int32_t fs_mkdir(const char *path, file_perms_t perms)
-{
-    inode_t *dir_inode = fs_inode_create(FILE_TYPE_DIRECTORY, perms);
-    if (!dir_inode) {
-        print("[FS] ERROR: Failed to create directory inode\n");
-        return -1;
-    }
-
-    return dir_inode->inode_number;
-}
-
-/**
- * Remove a directory
- */
-int32_t fs_rmdir(const char *path)
-{
-    /* Placeholder implementation */
-    return 0;
-}
-
-/**
- * Read directory entries
- */
-dir_entry_t* fs_readdir(inode_t *dir_inode)
-{
-    if (!dir_inode || dir_inode->type != FILE_TYPE_DIRECTORY) {
-        return NULL;
-    }
-
-    /* Placeholder implementation */
-    return NULL;
 }
