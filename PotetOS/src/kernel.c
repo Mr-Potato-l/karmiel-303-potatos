@@ -8,6 +8,7 @@
 #include "idt.h"
 #include "pic.h"
 #include "io.h"
+#include "pit.h"
 #include "print.h"
 #include "multiboot.h"
 #include "paging.h"
@@ -27,6 +28,23 @@
 #endif
 
 void initializer(multiboot_info_t* mbd);
+
+static void task_a(void) {
+	while (1) {
+		print("Task A running\n");
+		/* simple busy delay */
+		for (volatile uint32_t i = 0; i < 200000; i++);
+		scheduler_yield();
+	}
+}
+
+static void task_b(void) {
+	while (1) {
+		print("Task B running\n");
+		for (volatile uint32_t i = 0; i < 200000; i++);
+		scheduler_yield();
+	}
+}
 
 void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 {
@@ -62,6 +80,9 @@ void initializer(multiboot_info_t* mbd){
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
+	/* Initialize PIT for 100Hz timer */
+	pit_init(100);
+
 	/* Initialize the PMM */
 	pmm_init(mbd->mmap_addr, mbd->mmap_length, 0);
 
@@ -71,6 +92,7 @@ void initializer(multiboot_info_t* mbd){
 	vmm_init();
 
 	heap_init();
+	print("Heap init...OK!\n\n");
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
