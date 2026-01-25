@@ -15,7 +15,9 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
+#include "scheduler.h"
 #include "Scanf.h"
+#include "cmnd.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -52,18 +54,11 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 
 	print("PotetOS Kernel Initialized!\n");
 
-	char* x = "empty";
-	int tst = 0;
-	print("before scanf: x = {s},tst = {d}\n", x, tst);
-	scanf("{s}{d}", x, &tst);
-	print("after scanf: x = {s},tst = {d}\n", x, tst);
 
-
-
-	// // Keep CPU running and wait for interrupts
-	// while (1) {
-	// 	asm volatile ("hlt");
-	// }
+	// Keep CPU running and wait for commands
+	while (1) {
+		prototype_cmnd();
+	}
 }
 
 // Kernel initialization routine
@@ -92,7 +87,8 @@ void initializer(multiboot_info_t* mbd){
 	vmm_init();
 
 	heap_init();
-	print("Heap init...OK!\n\n");
+
+	scheduler_init();
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
