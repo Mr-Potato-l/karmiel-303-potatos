@@ -1,14 +1,14 @@
 #ifndef CMND_H
 #define CMND_H
 
-struct cmnd {
-    char* name;
-    char* data;
-};
+typedef struct command {
+    char name[32];
+    char data[256];
+}command;
 
 void prototype_cmnd();
-void parse_cmnd(char* input, struct cmnd* command);
-void execute_cmnd(struct cmnd command);
+void parse_cmnd(char* input, command* cmnd);
+void execute_cmnd(command cmnd);
 
 
 #endif
