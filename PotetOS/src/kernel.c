@@ -110,11 +110,6 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		(uint32_t)mmmt < mmap_end;
 		mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
 	{
-		// uint32_t addr_lo = (uint32_t)(mmmt->addr & 0xFFFFFFFF);
-		// uint32_t addr_hi = (uint32_t)(mmmt->addr >> 32);
-
-		// uint32_t len_lo  = (uint32_t)(mmmt->len & 0xFFFFFFFF);
-		// uint32_t len_hi  = (uint32_t)(mmmt->len >> 32);
 
 		print("Start: {a}, Len: {a}, Size: {d}, Type: {d}\n",
 			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
@@ -325,18 +320,9 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
-	// uint8_t mask = inb(PIC1_DATA);
-	// terminal_writestring("PIC1 mask: ");
-	// terminal_putchar('0' + mask);
-
 	__asm__ volatile("sti"); // Enable interrupts
 
 	scheduler_init();
-
-	/* Create two simple tasks for demonstration */
-	// scheduler_create(task_a);
-	// scheduler_create(task_b);
-
 
 	print("--------------------------------------------------------------------------------");
 
