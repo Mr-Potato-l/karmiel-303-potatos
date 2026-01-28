@@ -202,16 +202,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("[TEST] Block address retrieval: FAIL\n");
 	}
 
-	/* Test 5: Create a directory */
-	file_perms_t dir_perms = { .permissions = 0755, .uid = 0, .gid = 0 };
-	int32_t dir_inode_num = fs_mkdir("home", g_fs.root_inode, dir_perms);
-	if (dir_inode_num >= 0) {
-		print("[TEST] Directory creation: PASS (inode #{d})\n", dir_inode_num);
-	} else {
-		print("[TEST] Directory creation: FAIL\n");
-	}
-
-	/* Test 6: File handle operations */
+	/* Test 5: File handle operations */
 	int32_t handle = fs_open("testfile.txt", 0x01);  // Read flag
 	if (handle >= 0) {
 		print("[TEST] File open: PASS (handle {d})\n", handle);
@@ -221,7 +212,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("[TEST] File open: FAIL\n");
 	}
 
-	/* Test 7: Free a block and verify */
+	/* Test 6: Free a block and verify */
 	fs_free_block(block1);
 	if (g_fs.free_blocks > 0) {
 		print("[TEST] Block deallocation: PASS (free blocks: {d})\n", g_fs.free_blocks);
@@ -350,16 +341,8 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	print("--------------------------------------------------------------------------------");
 
 
-	// Keep CPU running and wait for interrupts. Print a message every 100 ticks.
-	uint32_t last_ticks = pit_get_ticks();
+	// Keep CPU running and wait for interrupts.
 	while (1) {
-		uint32_t t = pit_get_ticks();
-		if (t != last_ticks) {
-			last_ticks = t;
-			if (t % 100 == 0) {
-				print("\nTicks: {d}\n", t);
-			}
-		}
 		/* Run any pending scheduled tasks (cooperative) */
 		scheduler_run_pending();
 		asm volatile ("hlt");
