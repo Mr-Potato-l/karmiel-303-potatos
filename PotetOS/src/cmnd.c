@@ -1,6 +1,7 @@
 #include "cmnd.h"
 #include "Scanf.h"
 #include "print.h"
+#include "str.h"
 
 void prototype_cmnd() {
     char* cmnd = "";
@@ -13,10 +14,7 @@ void prototype_cmnd() {
 }
 
 void execute_cmnd(struct cmnd command){
-    if (command.name == "exit"){
+    if (strcmp(command.name, "exit")){
         print("Exiting PotetOS...\n");
-        while (1) {
-            __asm__ __volatile__("hlt");
-        }
     }
 }
