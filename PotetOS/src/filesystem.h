@@ -10,6 +10,7 @@
 #define MAX_FILES_OPEN      16
 #define MAX_FILES_TOTAL     16
 #define MAX_DIR_ENTRIES     8       /* Max files/dirs per directory */
+#define MAX_PATH_DEPTH      8       /* Maximum directory nesting level */
 #define INODE_SIZE          256
 #define BLOCK_SIZE          4096
 #define MAX_BLOCKS          32
@@ -113,5 +114,21 @@ uint32_t fs_get_free_inode(void);
 void fs_set_inode_bitmap(uint32_t inode_num, bool used);
 void fs_set_block_bitmap(uint32_t block_num, bool used);
 int32_t fs_strcmp(const char *s1, const char *s2);
+
+/* Path operations */
+typedef struct {
+    char components[MAX_PATH_DEPTH][MAX_FILENAME_LEN];
+    uint32_t depth;
+    bool is_absolute;
+} path_t;
+
+path_t* fs_parse_path(const char *path);
+inode_t* fs_traverse_path(const char *path);
+inode_t* fs_get_parent_dir(const char *path, char *out_filename);
+int32_t fs_create_file(const char *path, file_perms_t perms);
+int32_t fs_create_dir(const char *path, file_perms_t perms);
+int32_t fs_remove_file(const char *path);
+int32_t fs_remove_dir(const char *path);
+inode_t* fs_find(const char *path);
 
 #endif

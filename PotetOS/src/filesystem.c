@@ -536,3 +536,240 @@ int32_t fs_seek(int32_t handle, int32_t offset __attribute__((unused)), int when
     /* Placeholder implementation */
     return 0;
 }
+
+/**
+ * Parse a path string into components
+ * e.g., "/home/user/file.txt" -> ["home", "user", "file.txt"]
+ */
+path_t* fs_parse_path(const char *path)
+{
+    static path_t parsed_path;
+    parsed_path.depth = 0;
+    parsed_path.is_absolute = false;
+
+    if (!path || path[0] == '\0') {
+        return &parsed_path;
+    }
+
+    /* Check if absolute path */
+    uint32_t start = 0;
+    if (path[0] == '/') {
+        parsed_path.is_absolute = true;
+        start = 1;
+    }
+
+    /* Parse path components */
+    uint32_t i = start;
+    uint32_t component_len = 0;
+    char current_component[MAX_FILENAME_LEN];
+
+    while (path[i] && parsed_path.depth < MAX_PATH_DEPTH) {
+        if (path[i] == '/') {
+            if (component_len > 0) {
+                current_component[component_len] = '\0';
+                /* Copy component to path structure */
+                uint32_t j = 0;
+                while (j < component_len && j < (MAX_FILENAME_LEN - 1)) {
+                    parsed_path.components[parsed_path.depth][j] = current_component[j];
+                    j++;
+                }
+                parsed_path.components[parsed_path.depth][j] = '\0';
+                parsed_path.depth++;
+                component_len = 0;
+            }
+        } else {
+            if (component_len < (MAX_FILENAME_LEN - 1)) {
+                current_component[component_len++] = path[i];
+            }
+        }
+        i++;
+    }
+
+    /* Add final component */
+    if (component_len > 0 && parsed_path.depth < MAX_PATH_DEPTH) {
+        current_component[component_len] = '\0';
+        uint32_t j = 0;
+        while (j < component_len && j < (MAX_FILENAME_LEN - 1)) {
+            parsed_path.components[parsed_path.depth][j] = current_component[j];
+            j++;
+        }
+        parsed_path.components[parsed_path.depth][j] = '\0';
+        parsed_path.depth++;
+    }
+
+    return &parsed_path;
+}
+
+/**
+ * Traverse a path and return the inode it points to
+ */
+inode_t* fs_traverse_path(const char *path)
+{
+    path_t *parsed = fs_parse_path(path);
+
+    if (parsed->depth == 0) {
+        return g_fs.root_inode;
+    }
+
+    /* Start from root or current directory */
+    inode_t *current = g_fs.root_inode;
+
+    /* Follow each path component */
+    for (uint32_t i = 0; i < parsed->depth; i++) {
+        if (!current || current->type != FILE_TYPE_DIRECTORY) {
+            return NULL;
+        }
+
+        current = fs_find_in_dir(current, parsed->components[i]);
+        if (!current) {
+            return NULL;
+        }
+    }
+
+    return current;
+}
+
+/**
+ * Get parent directory and filename from a path
+ * e.g., "/home/user/file.txt" -> ("/home/user", "file.txt")
+ */
+inode_t* fs_get_parent_dir(const char *path, char *out_filename)
+{
+    path_t *parsed = fs_parse_path(path);
+
+    if (parsed->depth == 0) {
+        return NULL;
+    }
+
+    /* Copy the last component as filename */
+    if (out_filename && parsed->depth > 0) {
+        uint32_t i = 0;
+        while (i < MAX_FILENAME_LEN - 1 && parsed->components[parsed->depth - 1][i]) {
+            out_filename[i] = parsed->components[parsed->depth - 1][i];
+            i++;
+        }
+        out_filename[i] = '\0';
+    }
+
+    /* If only one component, parent is root */
+    if (parsed->depth == 1) {
+        return g_fs.root_inode;
+    }
+
+    /* Navigate to parent directory */
+    inode_t *parent = g_fs.root_inode;
+    for (uint32_t i = 0; i < parsed->depth - 1; i++) {
+        parent = fs_find_in_dir(parent, parsed->components[i]);
+        if (!parent) {
+            return NULL;
+        }
+    }
+
+    return parent;
+}
+
+/**
+ * Create a regular file at a given path
+ */
+int32_t fs_create_file(const char *path, file_perms_t perms)
+{
+    char filename[MAX_FILENAME_LEN];
+    inode_t *parent = fs_get_parent_dir(path, filename);
+
+    if (!parent) {
+        print("[FS] ERROR: Parent directory not found\n");
+        return -1;
+    }
+
+    /* Create new file inode */
+    inode_t *file_inode = fs_inode_create(FILE_TYPE_REGULAR, perms);
+    if (!file_inode) {
+        print("[FS] ERROR: Failed to create file inode\n");
+        return -1;
+    }
+
+    /* Add entry to parent */
+    if (fs_add_dir_entry(parent, filename, file_inode->inode_number) != 0) {
+        print("[FS] ERROR: Failed to add file entry to parent\n");
+        fs_inode_delete(file_inode->inode_number);
+        return -1;
+    }
+
+    print("[FS] Created file '{s}' (inode {d})\n", filename, file_inode->inode_number);
+    return file_inode->inode_number;
+}
+
+/**
+ * Create a directory at a given path
+ */
+int32_t fs_create_dir(const char *path, file_perms_t perms)
+{
+    char dirname[MAX_FILENAME_LEN];
+    inode_t *parent = fs_get_parent_dir(path, dirname);
+
+    if (!parent) {
+        print("[FS] ERROR: Parent directory not found\n");
+        return -1;
+    }
+
+    return fs_mkdir(dirname, parent, perms);
+}
+
+/**
+ * Remove a file at a given path
+ */
+int32_t fs_remove_file(const char *path)
+{
+    char filename[MAX_FILENAME_LEN];
+    inode_t *parent = fs_get_parent_dir(path, filename);
+
+    if (!parent) {
+        print("[FS] ERROR: Parent directory not found\n");
+        return -1;
+    }
+
+    /* Find and remove the entry */
+    for (uint32_t i = 0; i < parent->entry_count; i++) {
+        if (fs_strcmp(parent->entries[i].filename, filename) == 0) {
+            uint32_t inode_num = parent->entries[i].inode_number;
+            
+            /* Remove entry by shifting */
+            for (uint32_t j = i; j < parent->entry_count - 1; j++) {
+                parent->entries[j] = parent->entries[j + 1];
+            }
+            parent->entry_count--;
+
+            /* Delete the inode */
+            fs_inode_delete(inode_num);
+            print("[FS] Removed file '{s}'\n", filename);
+            return 0;
+        }
+    }
+
+    print("[FS] ERROR: File not found\n");
+    return -1;
+}
+
+/**
+ * Remove a directory at a given path
+ */
+int32_t fs_remove_dir(const char *path)
+{
+    char dirname[MAX_FILENAME_LEN];
+    inode_t *parent = fs_get_parent_dir(path, dirname);
+
+    if (!parent) {
+        print("[FS] ERROR: Parent directory not found\n");
+        return -1;
+    }
+
+    return fs_rmdir(dirname, parent);
+}
+
+/**
+ * Find a file/directory by path
+ */
+inode_t* fs_find(const char *path)
+{
+    return fs_traverse_path(path);
+}

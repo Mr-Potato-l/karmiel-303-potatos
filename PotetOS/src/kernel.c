@@ -17,6 +17,7 @@
 #include "heap.h"
 #include "scheduler.h"
 #include "filesystem.h"
+#include "fs_api.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -316,6 +317,174 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	}
 
 	print("--- Directory Tests Complete ---\n\n");
+
+	/* Path System Tests */
+	print("\n--- Path System Tests ---\n");
+
+	/* Test 1: Parse absolute path */
+	path_t *parsed = fs_parse_path("/home/user/file.txt");
+	if (parsed && parsed->is_absolute && parsed->depth == 3) {
+		print("[TEST] Parse path '/home/user/file.txt': PASS ({d} components)\n", parsed->depth);
+	} else {
+		print("[TEST] Parse path: FAIL\n");
+	}
+
+	/* Test 2: Create nested file using path */
+	int32_t file_inode_num = fs_create_file("/home/user/config.txt", file_perms);
+	if (file_inode_num >= 0) {
+		print("[TEST] Create file using path '/home/user/config.txt': PASS (inode {d})\n", file_inode_num);
+	} else {
+		print("[TEST] Create file using path: FAIL\n");
+	}
+
+	/* Test 3: Find file by path */
+	inode_t *found_file = fs_find("/home/user/config.txt");
+	if (found_file && found_file->type == FILE_TYPE_REGULAR) {
+		print("[TEST] Find file by path: PASS (inode {d})\n", found_file->inode_number);
+	} else {
+		print("[TEST] Find file by path: FAIL\n");
+	}
+
+	/* Test 4: Create another nested directory using path */
+	int32_t logs_dir = fs_create_dir("/home/user/logs", test_perms);
+	if (logs_dir >= 0) {
+		print("[TEST] Create nested directory '/home/user/logs': PASS (inode {d})\n", logs_dir);
+	} else {
+		print("[TEST] Create nested directory: FAIL\n");
+	}
+
+	/* Test 5: Traverse existing path */
+	inode_t *traversed = fs_traverse_path("/home/user/logs");
+	if (traversed && traversed->type == FILE_TYPE_DIRECTORY) {
+		print("[TEST] Traverse path '/home/user/logs': PASS (inode {d})\n", traversed->inode_number);
+	} else {
+		print("[TEST] Traverse path: FAIL\n");
+	}
+
+	/* Test 6: Try to find non-existent path */
+	not_found = fs_find("/home/nonexistent");
+	if (not_found == NULL) {
+		print("[TEST] Find non-existent path: PASS (correctly returned NULL)\n");
+	} else {
+		print("[TEST] Find non-existent path: FAIL\n");
+	}
+
+	/* Test 7: Create file in nested directory */
+	int32_t log_file_inode = fs_create_file("/home/user/logs/system.log", file_perms);
+	if (log_file_inode >= 0) {
+		print("[TEST] Create file in nested directory: PASS (inode {d})\n", log_file_inode);
+	} else {
+		print("[TEST] Create file in nested directory: FAIL\n");
+	}
+
+	/* Test 8: Remove file using path */
+	int32_t rm_result = fs_remove_file("/home/user/config.txt");
+	if (rm_result == 0) {
+		print("[TEST] Remove file using path: PASS\n");
+	} else {
+		print("[TEST] Remove file using path: FAIL\n");
+	}
+
+	/* Test 9: Verify file was deleted */
+	inode_t *deleted_check = fs_find("/home/user/config.txt");
+	if (deleted_check == NULL) {
+		print("[TEST] Verify file deletion: PASS (file no longer found)\n");
+	} else {
+		print("[TEST] Verify file deletion: FAIL\n");
+	}
+
+	print("--- Path System Tests Complete ---\n\n");
+
+	/* File System API Tests */
+	print("\n--- File System API Tests ---\n");
+
+	/* Test 1: Check if file exists using API */
+	bool exists = fs_api_exists("/home/user/logs/system.log");
+	if (exists) {
+		print("[TEST] File exists check: PASS\n");
+	} else {
+		print("[TEST] File exists check: FAIL\n");
+	}
+
+	/* Test 2: Check if path is a directory */
+	bool is_dir = fs_api_is_directory("/home/user");
+	if (is_dir) {
+		print("[TEST] Is directory check: PASS\n");
+	} else {
+		print("[TEST] Is directory check: FAIL\n");
+	}
+
+	/* Test 3: Check if path is a file */
+	bool is_file = fs_api_is_file("/home/user/logs/system.log");
+	if (is_file) {
+		print("[TEST] Is file check: PASS\n");
+	} else {
+		print("[TEST] Is file check: FAIL\n");
+	}
+
+	/* Test 4: Get file stats */
+	fs_stat_t stat;
+	int32_t stat_result = fs_api_stat("/home/user/logs/system.log", &stat);
+	if (stat_result == FS_OK) {
+		print("[TEST] Get file stats: PASS (inode {d}, type {d})\n", 
+			stat.inode_number, stat.type);
+	} else {
+		print("[TEST] Get file stats: FAIL ({s})\n", fs_api_strerror(stat_result));
+	}
+
+	/* Test 5: List directory contents using API */
+	fs_dirent_t entries[8];
+	int32_t list_count = fs_api_listdir("/home/user", entries, 8);
+	if (list_count >= 0) {
+		print("[TEST] List directory: PASS ({d} entries)\n", list_count);
+		for (int32_t i = 0; i < list_count; i++) {
+			print("  - {s} (type {d})\n", entries[i].name, entries[i].type);
+		}
+	} else {
+		print("[TEST] List directory: FAIL ({s})\n", fs_api_strerror(list_count));
+	}
+
+	/* Test 6: Try to create file that already exists */
+	int32_t dup_result = fs_api_mkdir("/home/user");
+	if (dup_result == FS_ERR_EXISTS) {
+		print("[TEST] Duplicate creation prevention: PASS (correctly rejected)\n");
+	} else {
+		print("[TEST] Duplicate creation prevention: FAIL\n");
+	}
+
+	/* Test 7: Get error message */
+	const char *err_msg = fs_api_strerror(FS_ERR_NOT_FOUND);
+	if (err_msg) {
+		print("[TEST] Error message lookup: PASS ({s})\n", err_msg);
+	} else {
+		print("[TEST] Error message lookup: FAIL\n");
+	}
+
+	/* Test 8: Create new directory with API */
+	int32_t new_dir = fs_api_mkdir("/home/user/documents");
+	if (new_dir == FS_OK) {
+		print("[TEST] Create directory with API: PASS\n");
+	} else {
+		print("[TEST] Create directory with API: FAIL ({s})\n", fs_api_strerror(new_dir));
+	}
+
+	/* Test 9: Remove file with API */
+	int32_t rm_api = fs_api_remove("/home/user/logs/system.log");
+	if (rm_api == FS_OK) {
+		print("[TEST] Remove file with API: PASS\n");
+	} else {
+		print("[TEST] Remove file with API: FAIL ({s})\n", fs_api_strerror(rm_api));
+	}
+
+	/* Test 10: Check removed file is gone */
+	bool removed_check = fs_api_exists("/home/user/logs/system.log");
+	if (!removed_check) {
+		print("[TEST] Verify file removal: PASS (file no longer exists)\n");
+	} else {
+		print("[TEST] Verify file removal: FAIL\n");
+	}
+
+	print("--- File System API Tests Complete ---\n\n");
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
