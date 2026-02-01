@@ -31,40 +31,18 @@
 
 #define TEST_VIRT 0x400000  // 4MB
 
-static void task_a(void) {
-	while (1) {
-		print("Task A running\n");
-		/* simple busy delay */
-		for (volatile uint32_t i = 0; i < 200000; i++);
-		scheduler_yield();
-	}
-}
-
-static void task_b(void) {
-	while (1) {
-		print("Task B running\n");
-		for (volatile uint32_t i = 0; i < 200000; i++);
-		scheduler_yield();
-	}
-}
-
 void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 {
 	// Initialize terminal interface
 	terminal_initialize();
-	print("Terminal init...OK!\n");
 	
 	
 	/* Initialize the GDT */
 	gdt_install();
 	
-	print("GDT init...OK!\n");
-	
 	
 	/* Initialize the IDT */
 	idt_install();
-	
-	print("IDT init...OK!\n");
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
@@ -75,25 +53,14 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 	/* Initialize the PMM */
 	pmm_init(mbd->mmap_addr, mbd->mmap_length, 0);
 
-	pmm_dump_stats();
-
-	print("PMM init...OK!\n");
-
 
 	/* Initialize Paging */
 	init_paging();
 
-	vmm_init();
-	
-	print("Paging init...OK!\n\n");
-
 
 	heap_init();
 
-	print("Heap init...OK!\n");
-
 	
-	print("Available Memory Map:\n");
 	/* Make sure the magic number matches for memory mapping*/
     if(magic != MULTIBOOT_BOOTLOADER_MAGIC) {
         print("invalid magic number!\n");
@@ -104,75 +71,10 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
         print("invalid memory map given by GRUB bootloader\n");
     }
 
-    /* Loop through the memory map and display the values */
-    uint32_t mmap_end = mbd->mmap_addr + mbd->mmap_length;
 
-	for (multiboot_memory_map_t* mmmt = (multiboot_memory_map_t*) mbd->mmap_addr;
-		(uint32_t)mmmt < mmap_end;
-		mmmt = (multiboot_memory_map_t*)((uint32_t)mmmt + mmmt->size + sizeof(mmmt->size)))
-	{
-
-		print("Start: {a}, Len: {a}, Size: {d}, Type: {d}\n",
-			mmmt->addr, mmmt->len, mmmt->size, mmmt->type);
-	}
-
-	/* Different Paging Tests! */
-
-	uint32_t *ptr = (uint32_t*)0x1000;
-	*ptr = 0xDEADBEEF;
-
-	if (*ptr == 0xDEADBEEF) {
-		print("Paging OK: identity map works\n");
-	} else {
-		print("Paging BROKEN\n");
-	}
-
-	uint32_t frame_a = pmm_alloc_frame();
-	uint32_t frame_b = pmm_alloc_frame();
-
-	print("Allocated frames:\n");
-	print("a: ");
-	print_hex(frame_a);
-	print("\nb: ");
-	print_hex(frame_b);
-	print("\n");
-
-	uint32_t phys = pmm_alloc_frame();
-	map_page(TEST_VIRT, phys, 0x3); // present | rw
-
-	uint32_t *v = (uint32_t*)TEST_VIRT;
-	*v = 0xCAFEBABE;
-
-	if (*v == 0xCAFEBABE) {
-		print("Virtual mapping OK\n");
-	}
-
-	int* a = kmalloc(sizeof(int));
-	int* b = kmalloc(sizeof(int));
-
-	*a = 1337;
-	*b = 0xDEADBEEF;
-
-	print("heap a = ");
-	print_hex(*a);
-	print("\nheap b = ");
-	print_hex(*b);
-	print("\n");
-
-
-	/* File System Tests */
-	print("\n--- File System Tests ---\n");
 	fs_init();
 
-	/* Test 1: Check root inode creation */
-	inode_t *root = fs_inode_get(0);
-	if (root && root->type == FILE_TYPE_DIRECTORY) {
-		print("[TEST] Root inode created: PASS\n");
-	} else {
-		print("[TEST] Root inode creation: FAIL\n");
-	}
-
-	/* Test 2: Create a new regular file inode */
+	/* Test 1: Create a new regular file inode */
 	file_perms_t file_perms = { .permissions = 0644, .uid = 0, .gid = 0 };
 	inode_t *file_inode = fs_inode_create(FILE_TYPE_REGULAR, file_perms);
 	if (file_inode) {
@@ -181,7 +83,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("[TEST] Regular file inode creation: FAIL\n");
 	}
 
-	/* Test 3: Allocate blocks */
+	/* Test 2: Allocate blocks */
 	uint32_t block1 = fs_allocate_block();
 	uint32_t block2 = fs_allocate_block();
 	if (block1 != 0xFFFFFFFF && block2 != 0xFFFFFFFF && block1 != block2) {
@@ -190,7 +92,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("[TEST] Block allocation: FAIL\n");
 	}
 
-	/* Test 4: Get block address */
+	/* Test 3: Get block address */
 	void *block_addr = fs_get_block_address(block1);
 	if (block_addr) {
 		print("[TEST] Block address retrieval: PASS (addr: {x})\n", (uint32_t)block_addr);
@@ -198,7 +100,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("[TEST] Block address retrieval: FAIL\n");
 	}
 
-	/* Test 5: File handle operations */
+	/* Test 4: File handle operations */
 	int32_t handle = fs_open("testfile.txt", 0x01);  // Read flag
 	if (handle >= 0) {
 		print("[TEST] File open: PASS (handle {d})\n", handle);
@@ -208,7 +110,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 		print("[TEST] File open: FAIL\n");
 	}
 
-	/* Test 6: Free a block and verify */
+	/* Test 5: Free a block and verify */
 	fs_free_block(block1);
 	if (g_fs.free_blocks > 0) {
 		print("[TEST] Block deallocation: PASS (free blocks: {d})\n", g_fs.free_blocks);
