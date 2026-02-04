@@ -6,7 +6,7 @@
 #define KBD_STATUS 0x64
 #define KBD_DATA   0x60
 #define KBD_OBF    0x01 // Output buffer full
-
+#define KBD_BUFFER_SIZE 1024 // Keyboard buffer for getchar()
 unsigned char kbd_us[128] = {
     0, 27, '1','2','3','4','5','6','7','8','9','0','-','=', '\b',
     '\t', 'q','w','e','r','t','y','u','i','o','p','[',']','\n',
@@ -14,6 +14,13 @@ unsigned char kbd_us[128] = {
     0, '\\','z','x','c','v','b','n','m',',','.','/', 0,
     '*', 0, ' '
 };
+
+
+char kbd_buffer[KBD_BUFFER_SIZE];
+volatile int kbd_head = 0;
+volatile int kbd_tail = 0;
+
+
     
 // Keyboard interrupts handler
 void keyboard_handler() {
@@ -55,5 +62,16 @@ void keyboard_handler() {
             terminal_backspace();
         else if (c != 0)
             terminal_putchar(c);
+        kbd_tail++;
+        kbd_buffer[kbd_tail] = c;
     }
+}
+
+int getchar() {
+    while (kbd_head == kbd_tail) {
+        asm volatile("hlt"); // wait for interrupt
+    }
+    char c = kbd_buffer[kbd_tail];
+    kbd_tail--;
+    return c;
 }
