@@ -76,6 +76,7 @@ typedef struct {
     uint32_t *inode_bitmap;        /* Track free/used inodes */
     inode_t *inode_table;          /* Array of all inodes */
     inode_t *root_inode;           /* Pointer to root directory */
+    inode_t *current_dir;          /* Pointer to current working directory */
 } filesystem_t;
 
 /* Global file system instance (exposed for testing/debugging) */

@@ -73,6 +73,8 @@ void initializer(multiboot_info_t* mbd){
 
 	heap_init();
 
+	fs_init();
+
 	scheduler_init();
 
 	IRQ_clear_mask(0);
