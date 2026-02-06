@@ -428,7 +428,6 @@ int32_t fs_mkdir(const char *name, inode_t *parent, file_perms_t perms)
         return -1;
     }
 
-    print("[FS] Created directory '{s}' (inode {d})\n", name, dir_inode->inode_number);
     return dir_inode->inode_number;
 }
 
@@ -476,7 +475,6 @@ int32_t fs_rmdir(const char *name, inode_t *parent)
         fs_inode_delete(inode_num);
     }
 
-    print("[FS] Removed directory '{s}'\n", name);
     return 0;
 }
 
@@ -680,7 +678,6 @@ int32_t fs_create_file(const char *path, file_perms_t perms)
         return -1;
     }
 
-    print("[FS] Created file '{s}' (inode {d})\n", filename, file_inode->inode_number);
     return file_inode->inode_number;
 }
 
@@ -726,7 +723,6 @@ int32_t fs_remove_file(const char *path)
 
             /* Delete the inode */
             fs_inode_delete(inode_num);
-            print("[FS] Removed file '{s}'\n", filename);
             return 0;
         }
     }
