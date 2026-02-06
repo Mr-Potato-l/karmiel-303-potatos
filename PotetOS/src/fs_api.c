@@ -81,7 +81,7 @@ int32_t fs_api_write(int32_t handle, const void *buffer, uint32_t size)
 
 int32_t fs_api_mkdir(const char *path)
 {
-    if (!path) {
+    if (!path || path[0] == '\0' || path[0] == ' ') {
         return FS_ERR_INVALID;
     }
 

@@ -20,6 +20,8 @@
 #define FS_MODE_APPEND      0x04
 #define FS_MODE_CREATE      0x08
 
+#define MAX_DIR_ENTRIES     8
+
 /* File info structure */
 typedef struct {
     uint32_t inode_number;
