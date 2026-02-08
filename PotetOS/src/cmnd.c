@@ -41,7 +41,7 @@ void execute_cmnd(command cmnd){
         fs_dirent_t entries[MAX_DIR_ENTRIES];
         int32_t result;
 
-        if (strcmp(cmnd.data, "") == 0) {
+        if (strcmp(cmnd.data, "\0") != 0) {
             result = fs_api_listdir("/", entries, MAX_DIR_ENTRIES); // List root directory, since it's the current one.
         } else {
             result = fs_api_listdir(cmnd.data, entries, MAX_DIR_ENTRIES); // List specified directory
