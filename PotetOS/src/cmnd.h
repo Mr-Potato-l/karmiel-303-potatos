@@ -6,7 +6,7 @@ typedef struct command {
     char data[256];
 }command;
 
-void prototype_cmnd();
+void cmnd_input();
 void parse_cmnd(char* input, command* cmnd);
 void execute_cmnd(command cmnd);
 

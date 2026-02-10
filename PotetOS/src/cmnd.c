@@ -10,7 +10,7 @@ void rmdir(command cmnd);
 void echo(command cmnd);
 void cd (command cmnd);
 
-void prototype_cmnd() {
+void cmnd_input() {
     char* input = "";
     scanf("{s}", input);
     command cmnd;
