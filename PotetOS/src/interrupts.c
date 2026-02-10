@@ -14,6 +14,10 @@ void isr_common_handler(uint32_t vector_number) {
         case  0:
             print(": Division By Zero\n");
             break;
+
+        case 14:
+            print(": Page Fault\n");
+            break;
         
         default:
             print(": Unknown Interrupt\n");

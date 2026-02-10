@@ -15,7 +15,11 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
+#include "scheduler.h"
+#include "filesystem.h"
+#include "fs_api.h"
 #include "Scanf.h"
+#include "cmnd.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -29,41 +33,17 @@
 
 void initializer(multiboot_info_t* mbd);
 
-static void task_a(void) {
-	while (1) {
-		print("Task A running\n");
-		/* simple busy delay */
-		for (volatile uint32_t i = 0; i < 200000; i++);
-		scheduler_yield();
-	}
-}
-
-static void task_b(void) {
-	while (1) {
-		print("Task B running\n");
-		for (volatile uint32_t i = 0; i < 200000; i++);
-		scheduler_yield();
-	}
-}
-
 void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 {
 	initializer(mbd);
 
 	print("PotetOS Kernel Initialized!\n");
 
-	char* x = "empty";
-	int tst = 0;
-	print("before scanf: x = {s},tst = {d}\n", x, tst);
-	scanf("{s}{d}", x, &tst);
-	print("after scanf: x = {s},tst = {d}\n", x, tst);
 
-
-
-	// // Keep CPU running and wait for interrupts
-	// while (1) {
-	// 	asm volatile ("hlt");
-	// }
+	// Keep CPU running and wait for commands
+	while (1) {
+		prototype_cmnd();
+	}
 }
 
 // Kernel initialization routine
@@ -76,7 +56,7 @@ void initializer(multiboot_info_t* mbd){
 	
 	/* Initialize the IDT */
 	idt_install();
-	
+
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
 
@@ -92,7 +72,10 @@ void initializer(multiboot_info_t* mbd){
 	vmm_init();
 
 	heap_init();
-	print("Heap init...OK!\n\n");
+
+	fs_init();
+
+	scheduler_init();
 
 	IRQ_clear_mask(0);
 	IRQ_clear_mask(1); // Clear mask on keyboard IRQ line
