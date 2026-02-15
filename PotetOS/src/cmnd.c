@@ -107,16 +107,43 @@ void rmdir(command cmnd){
 
 // primitive echo command, without file reading
 void echo(command cmnd){
-    print("{s}\n", cmnd.data);
+    int32_t result = 0;
+    bool file_exists = false;
+    result = fs_api_listdir(fs_api_getcwd(), entries, MAX_DIR_ENTRIES); // List root directory, since it's the current one.
+    if (result >= 0) {
+        for (uint32_t i = 0; i < result && entries[i].name[0] != '\0'; i++) {
+            if (strcmp(cmnd.data, entries[i].name)){
+                print("file exists. here is the content:\n");
+                file_exists = true;
+            }
+        }
+    }
+    else {
+        print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(result));
+    }
+
+    if (file_exists) {
+        char buffer[256];
+        int32_t read_result = fs_api_readfile(cmnd.data, buffer, sizeof(buffer));
+        if (read_result >= 0) {
+            buffer[read_result] = '\0'; // Null-terminate the content
+            print("{s}\n", buffer);
+        } else {
+            print("Error reading file '{s}': {s}\n", cmnd.data, fs_api_strerror(read_result));
+        }
+    } 
+    else {
+        print("{s}\n", cmnd.data);
+    }
 }
 
 void cd (command cmnd){
-    print("current directory is: {s}\n", fs_api_getcwd());
+    print("directory before is: {s}\n", fs_api_getcwd());
     int32_t result = fs_api_chdir(cmnd.data);
     if(result != FS_OK) {
         print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(result));
     }
     else {
-        print("current directory is: {s}\n", fs_api_getcwd());
+        print("directory now is: {s}\n", fs_api_getcwd());
     }
 }
