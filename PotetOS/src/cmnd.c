@@ -104,7 +104,13 @@ void ls(command cmnd){
 
     if (result >= 0) {
         for (uint32_t i = 0; i < result && entries[i].name[0] != '\0'; i++) {
-            print("- {s}\n", entries[i].name);
+            char type_char = 'f';  /* default to file */
+            if (entries[i].type == 1) {
+                type_char = 'd';   /* directory */
+            } else if (entries[i].type == 2) {
+                type_char = 'c';   /* device */
+            }
+            print("{c} {s}\n", type_char, entries[i].name);
         }
     } else {
         print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(result));
