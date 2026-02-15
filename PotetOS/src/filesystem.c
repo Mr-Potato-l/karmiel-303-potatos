@@ -328,9 +328,58 @@ size_t fs_read(int32_t handle, void *buffer, size_t bytes)
         return 0;
     }
 
-    /* Placeholder implementation */
-    memset(buffer, 0, bytes);
-    return 0;
+    uint32_t inode_num = g_file_table[handle].inode_number;
+    inode_t *inode = fs_inode_get(inode_num);
+    if (!inode) {
+        print("[FS] ERROR: Inode not found for read\n");
+        return 0;
+    }
+
+    if (inode->type != FILE_TYPE_REGULAR) {
+        print("[FS] ERROR: Read only supported for regular files\n");
+        return 0;
+    }
+
+    size_t offset = g_file_table[handle].offset;
+    if (offset >= inode->size) {
+        return 0; /* EOF */
+    }
+
+    size_t to_read = bytes;
+    size_t available = (inode->size > offset) ? (inode->size - offset) : 0;
+    if (to_read > available) to_read = available;
+
+    uint8_t *dst = (uint8_t *)buffer;
+    size_t total_read = 0;
+
+    while (total_read < to_read) {
+        uint32_t block_index = (offset) / BLOCK_SIZE;
+        uint32_t block_offset = (offset) % BLOCK_SIZE;
+
+        if (block_index >= inode->block_count) {
+            break; /* sparse/uninitialized area */
+        }
+
+        uint32_t block_num = inode->blocks[block_index];
+        void *block_addr = fs_get_block_address(block_num);
+        if (!block_addr) {
+            break;
+        }
+
+        uint8_t *src = (uint8_t *)block_addr + block_offset;
+        size_t chunk = BLOCK_SIZE - block_offset;
+        if (chunk > (to_read - total_read)) chunk = to_read - total_read;
+
+        for (size_t i = 0; i < chunk; i++) {
+            dst[total_read + i] = src[i];
+        }
+
+        total_read += chunk;
+        offset += chunk;
+    }
+
+    g_file_table[handle].offset += total_read;
+    return total_read;
 }
 
 /**
@@ -343,8 +392,75 @@ size_t fs_write(int32_t handle, const void *buffer __attribute__((unused)), size
         return 0;
     }
 
-    /* Placeholder implementation */
-    return 0;
+    uint32_t inode_num = g_file_table[handle].inode_number;
+    inode_t *inode = fs_inode_get(inode_num);
+    if (!inode) {
+        print("[FS] ERROR: Inode not found for write\n");
+        return 0;
+    }
+
+    if (inode->type != FILE_TYPE_REGULAR) {
+        print("[FS] ERROR: Write only supported for regular files\n");
+        return 0;
+    }
+
+    const uint8_t *src_buf = (const uint8_t *)buffer;
+    size_t remaining = bytes;
+    size_t total_written = 0;
+    size_t offset = g_file_table[handle].offset;
+
+    while (remaining > 0) {
+        uint32_t block_index = offset / BLOCK_SIZE;
+        uint32_t block_offset = offset % BLOCK_SIZE;
+
+        if (block_index >= MAX_BLOCKS_PER_INODE) {
+            print("[FS] ERROR: File exceeded max blocks per inode\n");
+            break;
+        }
+
+        /* Allocate block if needed */
+        if (block_index >= inode->block_count) {
+            uint32_t new_block = fs_allocate_block();
+            if (new_block == 0xFFFFFFFF) {
+                print("[FS] ERROR: Block allocation failed during write\n");
+                break;
+            }
+            inode->blocks[block_index] = new_block;
+            inode->block_count++;
+
+            /* Zero the new block */
+            void *baddr = fs_get_block_address(new_block);
+            if (baddr) memset(baddr, 0, BLOCK_SIZE);
+        }
+
+        uint32_t block_num = inode->blocks[block_index];
+        void *block_addr = fs_get_block_address(block_num);
+        if (!block_addr) {
+            break;
+        }
+
+        uint8_t *dst = (uint8_t *)block_addr + block_offset;
+        size_t chunk = BLOCK_SIZE - block_offset;
+        if (chunk > remaining) chunk = remaining;
+
+        for (size_t i = 0; i < chunk; i++) {
+            dst[i] = src_buf[total_written + i];
+        }
+
+        total_written += chunk;
+        remaining -= chunk;
+        offset += chunk;
+    }
+
+    /* Update inode size if we extended the file */
+    if (offset > (size_t)inode->size) {
+        inode->size = offset;
+    }
+
+    g_file_table[handle].offset += total_written;
+    inode->modified_time = 0; /* placeholder */
+
+    return total_written;
 }
 
 /**
@@ -585,6 +701,8 @@ path_t* fs_parse_path(const char *path)
 
 /**
  * Traverse a path and return the inode it points to
+ * For intermediate components, we must have directories.
+ * The final component can be any type (file, directory, etc.)
  */
 inode_t* fs_traverse_path(const char *path)
 {
@@ -599,7 +717,13 @@ inode_t* fs_traverse_path(const char *path)
 
     /* Follow each path component */
     for (uint32_t i = 0; i < parsed->depth; i++) {
-        if (!current || current->type != FILE_TYPE_DIRECTORY) {
+        if (!current) {
+            return NULL;
+        }
+
+        /* All intermediate path components must be directories */
+        /* but the final component (i == parsed->depth - 1) can be any type */
+        if (i < parsed->depth - 1 && current->type != FILE_TYPE_DIRECTORY) {
             return NULL;
         }
 

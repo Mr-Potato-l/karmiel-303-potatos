@@ -61,8 +61,11 @@ int32_t fs_api_read(int32_t handle, void *buffer, uint32_t size)
         return FS_ERR_INVALID;
     }
 
-    /* TODO: Implement actual file reading */
-    return FS_OK;
+    int32_t ret = (int32_t)fs_read(handle, buffer, size);
+    if (ret < 0) {
+        return FS_ERR_INVALID;
+    }
+    return ret;
 }
 
 int32_t fs_api_write(int32_t handle, const void *buffer, uint32_t size)
@@ -71,8 +74,11 @@ int32_t fs_api_write(int32_t handle, const void *buffer, uint32_t size)
         return FS_ERR_INVALID;
     }
 
-    /* TODO: Implement actual file writing */
-    return FS_OK;
+    int32_t ret = (int32_t)fs_write(handle, buffer, size);
+    if (ret < 0) {
+        return FS_ERR_INVALID;
+    }
+    return ret;
 }
 
 /**
