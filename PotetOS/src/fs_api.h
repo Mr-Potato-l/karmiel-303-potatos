@@ -142,6 +142,9 @@ bool fs_api_is_directory(const char *path);
  */
 bool fs_api_is_file(const char *path);
 
+int32_t fs_api_chdir(const char *path);
+
+
 /**
  * Utility Operations
  */
@@ -152,5 +155,22 @@ bool fs_api_is_file(const char *path);
  * @return          Error message string
  */
 const char* fs_api_strerror(int32_t error_code);
+
+/**
+ * Current Working Directory Operations
+ */
+
+/**
+ * Get the current working directory path
+ * @return          Pointer to current working directory path string
+ */
+const char* fs_api_getcwd(void);
+
+/**
+ * Change the current working directory
+ * @param path      Path to directory (relative or absolute)
+ * @return          FS_OK on success, error code on failure
+ */
+int32_t fs_api_chdir(const char *path);
 
 #endif

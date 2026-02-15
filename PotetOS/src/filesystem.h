@@ -77,6 +77,7 @@ typedef struct {
     inode_t *inode_table;          /* Array of all inodes */
     inode_t *root_inode;           /* Pointer to root directory */
     inode_t *current_dir;          /* Pointer to current working directory */
+    char cwd_path[MAX_PATH_DEPTH * MAX_FILENAME_LEN]; /* Current working directory path */
 } filesystem_t;
 
 /* Global file system instance (exposed for testing/debugging) */

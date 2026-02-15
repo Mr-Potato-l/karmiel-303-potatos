@@ -42,7 +42,7 @@ void kernel_main(multiboot_info_t* mbd, uint32_t magic)
 
 	// Keep CPU running and wait for commands
 	while (1) {
-		prototype_cmnd();
+		cmnd_input();
 	}
 }
 
