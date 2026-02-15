@@ -271,6 +271,35 @@ const char* fs_api_getcwd(void)
 
 int32_t fs_api_chdir(const char *path)
 {
+    if (strcmp(path,"..")) {
+        print("going up one directory\n");
+        // Handle going up to parent directory
+        if (strcmp(g_fs.cwd_path, "/") == 0) {
+            // Already at root, cannot go up
+            return FS_ERR_INVALID;
+        }
+        // Find the last '/' in the current path
+        char *last_slash = NULL;
+        for (char *p = g_fs.cwd_path; *p; p++) {
+            if (*p == '/') {
+                last_slash = p;
+            }
+        }
+        // if (last_slash) {
+        //     if (last_slash == g_fs.cwd_path) {
+        //         // Path is like "/dir", going up to root
+        //         g_fs.cwd_path[1] = '\0';
+        //     } else {
+        //         // Truncate the path at the last slash
+        //         *last_slash = '\0';
+        //     }
+        //     // Update current_dir to parent
+        //     g_fs.current_dir = fs_get_parent_dir(g_fs.cwd_path, NULL);
+        //     return FS_OK;
+        // } else {
+        //     return FS_ERR_INVALID;
+        // }
+    }
     if (!path || path[0] == '\0') {
         return FS_ERR_INVALID;
     }
