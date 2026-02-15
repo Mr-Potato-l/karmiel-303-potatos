@@ -256,6 +256,84 @@ bool fs_api_is_file(const char *path)
     return inode && inode->type == FILE_TYPE_REGULAR;
 }
 
+
+/**
+ * Current Working Directory Operations
+ */
+
+const char* fs_api_getcwd(void)
+{
+    return g_fs.cwd_path;
+}
+
+int32_t fs_api_chdir(const char *path)
+{
+    if (!path || path[0] == '\0') {
+        return FS_ERR_INVALID;
+    }
+
+    // Find the target directory
+    inode_t *target = fs_traverse_path(path);
+    if (!target) {
+        return FS_ERR_NOT_FOUND;
+    }
+
+    // Ensure it's a directory
+    if (target->type != FILE_TYPE_DIRECTORY) {
+        return FS_ERR_NOT_DIR;
+    }
+
+    // Update current directory pointer
+    g_fs.current_dir = target;
+
+    // Update cwd_path string
+    // If path is absolute, use it directly; otherwise, append to current path
+    if (path[0] == '/') {
+        // Absolute path: copy directly
+        uint32_t i = 0;
+        while (i < (MAX_PATH_DEPTH * MAX_FILENAME_LEN - 1) && path[i]) {
+            g_fs.cwd_path[i] = path[i];
+            i++;
+        }
+        g_fs.cwd_path[i] = '\0';
+    } else {
+        // Relative path: construct full path
+        char temp_path[MAX_PATH_DEPTH * MAX_FILENAME_LEN] = {0};
+        uint32_t len = 0;
+
+        // Copy current path
+        while (len < (MAX_PATH_DEPTH * MAX_FILENAME_LEN - 1) && g_fs.cwd_path[len]) {
+            temp_path[len] = g_fs.cwd_path[len];
+            len++;
+        }
+
+        // Append separator if not root
+        if (len > 1 && temp_path[len - 1] != '/') {
+            temp_path[len++] = '/';
+        } else if (len == 1 && temp_path[0] == '/') {
+            len = 1;
+        }
+
+        // Append the relative path
+        uint32_t i = 0;
+        while (i < (MAX_PATH_DEPTH * MAX_FILENAME_LEN - len - 1) && path[i]) {
+            temp_path[len + i] = path[i];
+            i++;
+        }
+        temp_path[len + i] = '\0';
+
+        // Copy back to cwd_path
+        i = 0;
+        while (i < (MAX_PATH_DEPTH * MAX_FILENAME_LEN - 1) && temp_path[i]) {
+            g_fs.cwd_path[i] = temp_path[i];
+            i++;
+        }
+        g_fs.cwd_path[i] = '\0';
+    }
+
+    return FS_OK;
+}
+
 /**
  * Utility Operations
  */

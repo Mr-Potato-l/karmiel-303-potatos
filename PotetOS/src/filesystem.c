@@ -73,6 +73,9 @@ void fs_init(void)
     if (g_fs.root_inode) {
         g_fs.root_inode->inode_number = 0;
         g_fs.current_dir = g_fs.root_inode;
+        // Initialize cwd_path to root
+        g_fs.cwd_path[0] = '/';
+        g_fs.cwd_path[1] = '\0';
     } else {
         print("[FS] ERROR: Failed to create root directory inode\n");
     }
@@ -712,8 +715,8 @@ inode_t* fs_traverse_path(const char *path)
         return g_fs.root_inode;
     }
 
-    /* Start from root or current directory */
-    inode_t *current = g_fs.root_inode;
+    /* Start from root (absolute path) or current directory (relative path) */
+    inode_t *current = parsed->is_absolute ? g_fs.root_inode : g_fs.current_dir;
 
     /* Follow each path component */
     for (uint32_t i = 0; i < parsed->depth; i++) {
