@@ -7,6 +7,8 @@
 void ls(command cmnd);
 void mkdir(command cmnd);
 void rmdir(command cmnd);
+void mkf(command cmnd);
+void rmf(command cmnd);
 void echo(command cmnd);
 void cd (command cmnd);
 
@@ -59,22 +61,10 @@ void execute_cmnd(command cmnd){
         cd(cmnd);
     }
     else if(strcmp(cmnd.name, "mkf")) {
-        if (cmnd.data[0] == '\0') {
-            print("mkf requires a filename\n");
-        } else {
-            int32_t handle = fs_api_open(cmnd.data, FS_MODE_CREATE | FS_MODE_WRITE);
-            if (handle < 0) {
-                print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(handle));
-            } else {
-                fs_api_close(handle);
-            }
-        }
+        mkf(cmnd);
     }
     else if(strcmp(cmnd.name, "rmf")) {
-        int32_t result = fs_api_remove(cmnd.data);
-        if(result != FS_OK) {
-            print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(result));
-        }
+        rmf(cmnd);
     }
     else if(strcmp(cmnd.name, "help")){
         print("Available commands:\n");
@@ -126,6 +116,26 @@ void mkdir(command cmnd){
 
 void rmdir(command cmnd){
     int32_t result = fs_api_rmdir(cmnd.data);
+    if(result != FS_OK) {
+        print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(result));
+    }
+}
+
+void mkf(command cmnd) {
+    if (cmnd.data[0] == '\0') {
+        print("mkf requires a filename\n");
+    } else {
+        int32_t handle = fs_api_open(cmnd.data, FS_MODE_CREATE | FS_MODE_WRITE);
+        if (handle < 0) {
+            print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(handle));
+        } else {
+            fs_api_close(handle);
+        }
+    }
+}
+
+void rmf(command cmnd) {
+    int32_t result = fs_api_remove(cmnd.data);
     if(result != FS_OK) {
         print("'{s}' - {s}\n", cmnd.data, fs_api_strerror(result));
     }

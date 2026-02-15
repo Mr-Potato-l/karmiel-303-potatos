@@ -33,7 +33,10 @@ int32_t fs_api_open(const char *path, uint8_t flags)
 
     /* Only regular files can be opened */
     if (inode->type != FILE_TYPE_REGULAR) {
-        return FS_ERR_NOT_DIR;
+        if (inode->type == FILE_TYPE_DIRECTORY) {
+            return FS_ERR_IS_DIR;
+        }
+        return FS_ERR_INVALID;
     }
 
     /* Get a file handle */
@@ -145,7 +148,7 @@ int32_t fs_api_remove(const char *path)
     }
 
     if (inode->type == FILE_TYPE_DIRECTORY) {
-        return FS_ERR_NOT_DIR;
+        return FS_ERR_IS_DIR;
     }
 
     int32_t result = fs_remove_file(path);
@@ -357,6 +360,10 @@ const char* fs_api_strerror(int32_t error_code)
             return "Not a directory";
         case FS_ERR_NOT_EMPTY:
             return "Directory not empty";
+        case FS_ERR_IS_DIR:
+            return "Is a directory";
+        case FS_ERR_IS_FILE:
+            return "Is a file";
         default:
             return "Unknown error";
     }

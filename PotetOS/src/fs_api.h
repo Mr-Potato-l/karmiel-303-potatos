@@ -13,6 +13,8 @@
 #define FS_ERR_EXISTS       -5
 #define FS_ERR_NOT_DIR      -6
 #define FS_ERR_NOT_EMPTY    -7
+#define FS_ERR_IS_DIR       -8
+#define FS_ERR_IS_FILE      -9
 
 /* File open flags */
 #define FS_MODE_READ        0x01
