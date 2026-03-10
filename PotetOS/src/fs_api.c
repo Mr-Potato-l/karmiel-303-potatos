@@ -1,6 +1,7 @@
 #include "fs_api.h"
 #include "filesystem.h"
 #include "print.h"
+#include "str.h"
 
 /**
  * File Operations
@@ -272,7 +273,6 @@ const char* fs_api_getcwd(void)
 int32_t fs_api_chdir(const char *path)
 {
     if (strcmp(path,"..")) {
-        print("going up one directory\n");
         // Handle going up to parent directory
         if (strcmp(g_fs.cwd_path, "/") == 0) {
             // Already at root, cannot go up
